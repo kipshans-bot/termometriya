@@ -1,0 +1,238 @@
+{
+  // ============================================================
+  // КОНФИГУРАЦИЯ ЭЛЕВАТОРА
+  // ============================================================
+  // Этот файл является единственным источником правды для
+  // статической конфигурации элеватора. При изменении файла
+  // и перезапуске сервера конфигурация синхронизируется с БД.
+  //
+  // Структура:
+  //   cultures  — справочник культур (продуктов)
+  //   lines     — линии с силосами и подвесками
+  // ============================================================
+
+  "cultures": [
+    {
+      "name": "Пшеница",
+      "normTemp": 25, "warnTemp": 30, "criticalTemp": 35,
+      "gradientWarn": 1.0, "gradientCritical": 2.0,
+      "deviationThreshold": 3.0,
+      "highTempThreshold": 30, "highTempGradient": 5.0,
+      "criticalHighTemp50": 50
+    },
+    {
+      "name": "Кукуруза",
+      "normTemp": 25, "warnTemp": 30, "criticalTemp": 35,
+      "gradientWarn": 1.0, "gradientCritical": 2.0,
+      "deviationThreshold": 3.0,
+      "highTempThreshold": 30, "highTempGradient": 5.0,
+      "criticalHighTemp50": 50
+    },
+    {
+      "name": "Ячмень",
+      "normTemp": 25, "warnTemp": 30, "criticalTemp": 35,
+      "gradientWarn": 1.0, "gradientCritical": 2.0,
+      "deviationThreshold": 3.0,
+      "highTempThreshold": 30, "highTempGradient": 5.0,
+      "criticalHighTemp50": 50
+    },
+    {
+      "name": "Подсолнечник",
+      "normTemp": 20, "warnTemp": 25, "criticalTemp": 30,
+      "gradientWarn": 0.8, "gradientCritical": 1.5,
+      "deviationThreshold": 2.0,
+      "highTempThreshold": 28, "highTempGradient": 4.0,
+      "criticalHighTemp50": 45
+    },
+    {
+      "name": "Гречиха",
+      "normTemp": 22, "warnTemp": 28, "criticalTemp": 34,
+      "gradientWarn": 1.0, "gradientCritical": 2.0,
+      "deviationThreshold": 3.0,
+      "highTempThreshold": 28, "highTempGradient": 5.0,
+      "criticalHighTemp50": 48
+    },
+    {
+      "name": "Овёс",
+      "normTemp": 25, "warnTemp": 32, "criticalTemp": 38,
+      "gradientWarn": 1.2, "gradientCritical": 2.5,
+      "deviationThreshold": 3.5,
+      "highTempThreshold": 32, "highTempGradient": 5.0,
+      "criticalHighTemp50": 50
+    }
+  ],
+
+  "lines": [
+    // ---- ЛИНИЯ 1 -----------------------------------------------
+    {
+      "name": "Линия 1",
+      "displayOrder": 1,
+      "silos": [
+        // Силос 1 — первый на блоке → positionIndex 0..5
+        {
+          "number": 1,
+          "fillLevel": 78, "capacity": 1000,
+          "cultureName": "Пшеница",
+          "pendants": [
+            { "positionIndex": 0, "pointCount": 18, "isCentral": true }, // Центральная
+            { "positionIndex": 1, "pointCount": 16 },
+            { "positionIndex": 2, "pointCount": 16 },
+            { "positionIndex": 3, "pointCount": 16 },
+            { "positionIndex": 4, "pointCount": 16 },
+            { "positionIndex": 5, "pointCount": 16 }
+          ]
+        },
+        // Силос 2 — второй на блоке → positionIndex 6..11
+        {
+          "number": 2,
+          "fillLevel": 81, "capacity": 1000,
+          "cultureName": "Кукуруза",
+          "pendants": [
+            { "positionIndex": 6, "pointCount": 18, "isCentral": true },
+            { "positionIndex": 7, "pointCount": 16 },
+            { "positionIndex": 8, "pointCount": 16 },
+            { "positionIndex": 9, "pointCount": 16 },
+            { "positionIndex": 10, "pointCount": 16 },
+            { "positionIndex": 11, "pointCount": 16 }
+          ]
+        },
+        {
+          "number": 3,
+          "fillLevel": 84, "capacity": 1000,
+          "cultureName": "Ячмень",
+          "pendants": [
+            { "positionIndex": 0, "pointCount": 18, "isCentral": true },
+            { "positionIndex": 1, "pointCount": 16 },
+            { "positionIndex": 2, "pointCount": 16 },
+            { "positionIndex": 3, "pointCount": 16 },
+            { "positionIndex": 4, "pointCount": 16 },
+            { "positionIndex": 5, "pointCount": 16 }
+          ]
+        },
+        {
+          "number": 4,
+          "fillLevel": 87, "capacity": 1000,
+          "cultureName": "Подсолнечник",
+          "pendants": [
+            { "positionIndex": 6, "pointCount": 18, "isCentral": true },
+            { "positionIndex": 7, "pointCount": 16 },
+            { "positionIndex": 8, "pointCount": 16 },
+            { "positionIndex": 9, "pointCount": 16 },
+            { "positionIndex": 10, "pointCount": 16 },
+            { "positionIndex": 11, "pointCount": 16 }
+          ]
+        }
+      ]
+    },
+    // ---- ЛИНИЯ 2 -----------------------------------------------
+    {
+      "name": "Линия 2",
+      "displayOrder": 2,
+      "silos": [
+        {
+          "number": 1, "fillLevel": 90, "capacity": 1000,
+          "cultureName": "Гречиха",
+          "pendants": [
+            { "positionIndex": 0, "pointCount": 18, "isCentral": true },
+            { "positionIndex": 1, "pointCount": 16 },
+            { "positionIndex": 2, "pointCount": 16 },
+            { "positionIndex": 3, "pointCount": 16 },
+            { "positionIndex": 4, "pointCount": 16 },
+            { "positionIndex": 5, "pointCount": 16 }
+          ]
+        },
+        {
+          "number": 2, "fillLevel": 93, "capacity": 1000,
+          "cultureName": "Овёс",
+          "pendants": [
+            { "positionIndex": 6, "pointCount": 18, "isCentral": true },
+            { "positionIndex": 7, "pointCount": 16 },
+            { "positionIndex": 8, "pointCount": 16 },
+            { "positionIndex": 9, "pointCount": 16 },
+            { "positionIndex": 10, "pointCount": 16 },
+            { "positionIndex": 11, "pointCount": 16 }
+          ]
+        },
+        {
+          "number": 3, "fillLevel": 76, "capacity": 1000,
+          "cultureName": "Пшеница",
+          "pendants": [
+            { "positionIndex": 0, "pointCount": 18, "isCentral": true },
+            { "positionIndex": 1, "pointCount": 16 },
+            { "positionIndex": 2, "pointCount": 16 },
+            { "positionIndex": 3, "pointCount": 16 },
+            { "positionIndex": 4, "pointCount": 16 },
+            { "positionIndex": 5, "pointCount": 16 }
+          ]
+        },
+        {
+          "number": 4, "fillLevel": 79, "capacity": 1000,
+          "cultureName": "Кукуруза",
+          "pendants": [
+            { "positionIndex": 6, "pointCount": 18, "isCentral": true },
+            { "positionIndex": 7, "pointCount": 16 },
+            { "positionIndex": 8, "pointCount": 16 },
+            { "positionIndex": 9, "pointCount": 16 },
+            { "positionIndex": 10, "pointCount": 16 },
+            { "positionIndex": 11, "pointCount": 16 }
+          ]
+        }
+      ]
+    },
+    // ---- ЛИНИЯ 3 -----------------------------------------------
+    {
+      "name": "Линия 3",
+      "displayOrder": 3,
+      "silos": [
+        {
+          "number": 1, "fillLevel": 82, "capacity": 1000,
+          "cultureName": "Ячмень",
+          "pendants": [
+            { "positionIndex": 0, "pointCount": 18, "isCentral": true },
+            { "positionIndex": 1, "pointCount": 16 },
+            { "positionIndex": 2, "pointCount": 16 },
+            { "positionIndex": 3, "pointCount": 16 },
+            { "positionIndex": 4, "pointCount": 16 },
+            { "positionIndex": 5, "pointCount": 16 }
+          ]
+        },
+        {
+          "number": 2, "fillLevel": 85, "capacity": 1000,
+          "cultureName": "Подсолнечник",
+          "pendants": [
+            { "positionIndex": 6, "pointCount": 18, "isCentral": true },
+            { "positionIndex": 7, "pointCount": 16 },
+            { "positionIndex": 8, "pointCount": 16 },
+            { "positionIndex": 9, "pointCount": 16 },
+            { "positionIndex": 10, "pointCount": 16 },
+            { "positionIndex": 11, "pointCount": 16 }
+          ]
+        },
+        {
+          "number": 3, "fillLevel": 88, "capacity": 1000,
+          "cultureName": "Гречиха",
+          "pendants": [
+            { "positionIndex": 0, "pointCount": 18, "isCentral": true },
+            { "positionIndex": 1, "pointCount": 16 },
+            { "positionIndex": 2, "pointCount": 16 },
+            { "positionIndex": 3, "pointCount": 16 },
+            { "positionIndex": 4, "pointCount": 16 },
+            { "positionIndex": 5, "pointCount": 16 }
+          ]
+        },
+        {
+          "number": 4, "fillLevel": 91, "capacity": 1000,
+          "cultureName": "Овёс",
+          "pendants": [
+            { "positionIndex": 6, "pointCount": 18, "isCentral": true },
+            { "positionIndex": 7, "pointCount": 16 },
+            { "positionIndex": 8, "pointCount": 16 },
+            { "positionIndex": 9, "pointCount": 16 },
+            { "positionIndex": 10, "pointCount": 16 },
+            { "positionIndex": 11, "pointCount": 16 }
+          ]
+        }
+      ]
+    }
+  ]
+}
