@@ -11,3 +11,5 @@ Thumbs.db
 .vs/
 
 *.log
+deploy/win-x64/
+deploy/linux-x64/

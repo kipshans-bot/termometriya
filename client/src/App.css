@@ -49,6 +49,24 @@ body {
   font-size: 14px;
   border-bottom: 2px solid transparent;
   transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.nav-alert-badge {
+  background: #e84545;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px;
+  line-height: 1;
 }
 
 .nav-links a:hover {
@@ -542,6 +560,14 @@ body {
   margin-bottom: 10px;
   padding-bottom: 8px;
   border-bottom: 1px solid #1a1e34;
+}
+
+.alert-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
 }
 
 .silo-large-num {

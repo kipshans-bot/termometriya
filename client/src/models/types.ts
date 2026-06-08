@@ -112,6 +112,7 @@ export interface AlertCounts {
   critical: number
   warning: number
   total: number
+  unacknowledged: number
 }
 
 export interface SiloUpdate {
@@ -136,6 +137,9 @@ export interface PointUpdate {
   index: number
   temp: number
   humidity: number | null
+  isActive?: boolean
+  pointIndex?: number
+  isValid: boolean
 }
 
 export interface PollingConfig {

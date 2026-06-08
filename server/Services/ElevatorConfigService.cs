@@ -8,8 +8,10 @@ namespace Termometriya.Server.Services;
 public class ElevatorConfigService
 {
     private readonly IServiceScopeFactory _scopeFactory;
-    private readonly string _configPath;
+    private string _configPath;
     private readonly ILogger<ElevatorConfigService> _logger;
+
+    public string ResolvedPath => _configPath;
 
     public ElevatorConfigService(IServiceScopeFactory scopeFactory, ILogger<ElevatorConfigService> logger)
     {

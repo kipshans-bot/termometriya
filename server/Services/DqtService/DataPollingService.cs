@@ -48,9 +48,10 @@ public class DataPollingService : BackgroundService
                     {
                         critical = await db.AlertEvents.CountAsync(a => a.IsActive && a.AlertType == AlertType.Critical, stoppingToken),
                         warning = await db.AlertEvents.CountAsync(a => a.IsActive && (a.AlertType == AlertType.Warning || a.AlertType == AlertType.GradientWarning || a.AlertType == AlertType.DeviationWarning), stoppingToken),
-                        total = await db.AlertEvents.CountAsync(a => a.IsActive, stoppingToken)
+                        total = await db.AlertEvents.CountAsync(a => a.IsActive, stoppingToken),
+                        unacknowledged = await db.AlertEvents.CountAsync(a => a.IsActive && a.AcknowledgedAt == null, stoppingToken)
                     };
-                    await notificationService.BroadcastAlertCountsAsync(counts.critical, counts.warning, counts.total);
+                    await notificationService.BroadcastAlertCountsAsync(counts.critical, counts.warning, counts.total, counts.unacknowledged);
 
                     await UpdatePollingModeAsync(readings);
 
@@ -161,10 +162,11 @@ public class DataPollingService : BackgroundService
                         PendantId = pg.Key,
                         Position = pendant?.PositionIndex ?? 0,
                         MaxTemp = pv.Any() ? Math.Round(pv.Max(r => r.Temperature), 1) : 0,
-                        Points = pv.Select(r => new
+                        Points = pg.Select(r => new
                         {
-                            Index = r.PointIndex,
-                            Temp = Math.Round(r.Temperature, 1),
+                            r.IsValid,
+                            r.PointIndex,
+                            Temp = r.IsValid ? Math.Round(r.Temperature, 1) : 0,
                             Humidity = r.Humidity.HasValue ? Math.Round(r.Humidity.Value, 1) : (double?)null
                         }).ToList()
                     };

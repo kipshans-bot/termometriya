@@ -40,7 +40,7 @@ export function onAlertTriggered(handler: (data: unknown) => void): () => void {
   return () => conn.off('AlertTriggered', handler)
 }
 
-export function onAlertCounts(handler: (data: { critical: number; warning: number; total: number }) => void): () => void {
+export function onAlertCounts(handler: (data: { critical: number; warning: number; total: number; unacknowledged: number }) => void): () => void {
   const conn = getConnection()
   conn.on('AlertCounts', handler)
   ensureConnected().catch(() => {})

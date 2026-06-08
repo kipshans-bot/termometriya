@@ -11,11 +11,11 @@ import Configurator from './pages/Configurator'
 import { onAlertCounts } from './services/signalr'
 
 function MainLayout() {
-  const [alertCount, setAlertCount] = useState(0)
+  const [unacknowledged, setUnacknowledged] = useState(0)
 
   useEffect(() => {
     return onAlertCounts((counts) => {
-      setAlertCount(counts.total)
+      setUnacknowledged(counts.unacknowledged)
     })
   }, [])
 
@@ -26,7 +26,10 @@ function MainLayout() {
         <div className="nav-links">
           <NavLink to="/" end>Мнемосхема</NavLink>
           <NavLink to="/trends">Тренды</NavLink>
-          <NavLink to="/alarms">Алармы{alertCount > 0 ? ' !' : ''}</NavLink>
+          <NavLink to="/alarms">
+            Алармы
+            {unacknowledged > 0 && <span className="nav-alert-badge">{unacknowledged}</span>}
+          </NavLink>
           <NavLink to="/reports">Отчёты</NavLink>
           <NavLink to="/thresholds">Пороги</NavLink>
         </div>

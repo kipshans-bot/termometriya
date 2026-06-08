@@ -274,8 +274,8 @@ public class ModbusTcpSimulator : IHostedService
                         }
 
                         bool pointValid = regIdx < regs.Length
-                            ? temp <= 80 && regs[regIdx] != unchecked((short)0xAAAA)
-                            : temp <= 80;
+                            ? temp >= -50 && temp <= 80 && regs[regIdx] != unchecked((short)0xAAAA)
+                            : temp >= -50 && temp <= 80;
 
                         readings.Add(new SensorReading
                         {

@@ -6,7 +6,7 @@ import type { AlertCounts, ElevatorLine } from '../models/types'
 
 export default function StatusBar() {
   const [lines, setLines] = useState<ElevatorLine[]>([])
-  const [counts, setCounts] = useState<AlertCounts>({ critical: 0, warning: 0, total: 0 })
+  const [counts, setCounts] = useState<AlertCounts>({ critical: 0, warning: 0, total: 0, unacknowledged: 0 })
   const [time, setTime] = useState(new Date())
 
   useEffect(() => {
@@ -31,6 +31,11 @@ export default function StatusBar() {
       <span className="stat">
         <span className="dot" style={{ background: tempColorHex(25) }} /> Пред.: {counts.warning}
       </span>
+      {counts.unacknowledged > 0 && (
+        <span className="stat">
+          <span className="dot" style={{ background: '#8b5cf6' }} /> Неподтв.: {counts.unacknowledged}
+        </span>
+      )}
       <span style={{ marginLeft: 'auto' }}>
         {time.toLocaleString('ru-RU')}
       </span>

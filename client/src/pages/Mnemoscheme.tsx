@@ -17,6 +17,13 @@ function tempColorGradient(temp: number): string {
   return '#e84545'
 }
 
+function alertColor(level: number): string {
+  if (level === 7) return '#8b5cf6'
+  if (level >= 2) return '#e84545'
+  if (level >= 1) return '#ff8800'
+  return 'transparent'
+}
+
 export default function Mnemoscheme() {
   const navigate = useNavigate()
   const [lines, setLines] = useState<ElevatorLine[]>([])
@@ -60,7 +67,7 @@ export default function Mnemoscheme() {
           pendantId: number
           position: number
           maxTemp: number
-          points: Array<{ index: number; temp: number; humidity: number | null }>
+          points: Array<{ isValid: boolean; pointIndex: number; temp: number; humidity: number | null }>
         }>
       }>
       if (!Array.isArray(updates)) return
@@ -80,11 +87,16 @@ export default function Mnemoscheme() {
                 if (!pu) return p
                 return {
                   ...p,
-                  points: p.points.map((pt, i) => ({
-                    ...pt,
-                    temp: pu.points[i]?.temp ?? pt.temp,
-                    humidity: pu.points[i]?.humidity ?? pt.humidity
-                  }))
+                  points: p.points.map(pt => {
+                    const up = pu.points.find(x => x.pointIndex === pt.index)
+                    if (!up) return pt
+                    return {
+                      ...pt,
+                      isValid: up.isValid,
+                      temp: up.isValid ? up.temp : pt.temp,
+                      humidity: up.isValid ? up.humidity : pt.humidity
+                    }
+                  })
                 }
               })
             }
@@ -147,11 +159,17 @@ export default function Mnemoscheme() {
           {currentLineSilos.map(silo => {
             const detail = siloDetails[silo.id]
             return (
-              <div key={silo.id} className="silo-large-card" style={{ cursor: 'pointer' }}
+              <div key={silo.id} className="silo-large-card" style={{
+                cursor: 'pointer',
+                borderLeft: silo.hasActiveAlert ? `4px solid ${alertColor(silo.alertLevel)}` : '2px solid #1e2238'
+              }}
                 onClick={() => navigate(`/silo/${silo.id}`)}>
                 <div className="silo-large-header">
                   <span className="silo-large-num">Силос №{silo.number}</span>
                   <span className="silo-large-culture">{silo.cultureName}</span>
+                  {silo.hasActiveAlert && (
+                    <span className="alert-dot" style={{ background: alertColor(silo.alertLevel) }} title="Есть активные алармы" />
+                  )}
                   <span className="silo-large-temp" style={{ color: tempColorGradient(silo.maxTemp) }}>
                     {silo.maxTemp.toFixed(1)}°C
                   </span>
@@ -186,10 +204,15 @@ export default function Mnemoscheme() {
             const maxPoints = detail ? Math.max(...detail.pendants.map(p => p.pointCount)) : 1
             const segHeight = Math.max(12, 460 / maxPoints)
             return (
-              <div key={silo.id} className="silo-large-card">
+              <div key={silo.id} className="silo-large-card" style={{
+                borderLeft: silo.hasActiveAlert ? `4px solid ${alertColor(silo.alertLevel)}` : '2px solid #1e2238'
+              }}>
                 <div className="silo-large-header">
                   <span className="silo-large-num">Силос №{silo.number}</span>
                   <span className="silo-large-culture">{silo.cultureName}</span>
+                  {silo.hasActiveAlert && (
+                    <span className="alert-dot" style={{ background: alertColor(silo.alertLevel) }} title="Есть активные алармы" />
+                  )}
                   <span className="silo-large-temp" style={{ color: tempColorGradient(silo.maxTemp) }}>
                     {silo.maxTemp.toFixed(1)}°C
                   </span>

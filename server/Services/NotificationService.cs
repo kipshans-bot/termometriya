@@ -17,8 +17,8 @@ public class NotificationService
         await _hub.Clients.All.SendAsync("SiloUpdated", data);
     }
 
-    public async Task BroadcastAlertCountsAsync(int critical, int warning, int total)
+    public async Task BroadcastAlertCountsAsync(int critical, int warning, int total, int unacknowledged)
     {
-        await _hub.Clients.All.SendAsync("AlertCounts", new { critical, warning, total });
+        await _hub.Clients.All.SendAsync("AlertCounts", new { critical, warning, total, unacknowledged });
     }
 }

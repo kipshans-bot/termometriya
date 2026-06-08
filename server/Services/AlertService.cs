@@ -25,6 +25,7 @@ public class AlertService
             .ToListAsync();
 
         var result = new List<AlertEvent>();
+        var modifiedExisting = false;
 
         foreach (var group in readings.GroupBy(r => r.SiloId))
         {
@@ -41,7 +42,26 @@ public class AlertService
 
             foreach (var reading in siloReadings)
             {
-                if (!reading.IsValid) continue;
+                if (!reading.IsValid)
+                {
+                    CheckAlert(result, existingAlerts, reading, AlertType.SensorFault,
+                        true, 0,
+                        $"{culture.Name}: Точка {reading.PointIndex} — неисправен датчик");
+                    continue;
+                }
+
+                var existingFault = existingAlerts.FirstOrDefault(a =>
+                    a.SiloId == reading.SiloId
+                    && a.ThermopendantId == reading.ThermopendantId
+                    && a.PointIndex == reading.PointIndex
+                    && a.AlertType == AlertType.SensorFault
+                    && a.IsActive);
+                if (existingFault != null)
+                {
+                    existingFault.IsActive = false;
+                    existingFault.ResolvedAt = DateTime.UtcNow;
+                    modifiedExisting = true;
+                }
 
                 if (silo.GrainLevelPointIndex.HasValue && reading.PointIndex >= silo.GrainLevelPointIndex.Value)
                     continue;
@@ -95,9 +115,10 @@ public class AlertService
             }
         }
 
-        if (result.Count > 0)
+        if (result.Count > 0 || modifiedExisting)
         {
-            db.AlertEvents.AddRange(result);
+            if (result.Count > 0)
+                db.AlertEvents.AddRange(result);
             await db.SaveChangesAsync();
         }
 

@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Панель управления</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', sans-serif; background: #0a0e1a; color: #e0e0e0; padding: 20px; }
+h1 { color: #5b8def; margin-bottom: 8px; font-size: 22px; }
+p { color: #6a6e88; margin-bottom: 16px; font-size: 13px; }
+.card { background: #101420; border: 1px solid #1e2238; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+.card-title { color: #8a8fa8; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+textarea { width: 100%; min-height: 400px; background: #0a0e1a; color: #c8e6c9; border: 1px solid #1e2238; border-radius: 4px; padding: 12px; font-family: 'Consolas', 'Courier New', monospace; font-size: 13px; resize: vertical; outline: none; }
+textarea:focus { border-color: #5b8def; }
+.btn { padding: 8px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all .2s; }
+.btn:hover { opacity: .85; }
+.btn-primary { background: #5b8def; color: #fff; }
+.btn-danger { background: #e84545; color: #fff; }
+.btn-warning { background: #e8c84a; color: #000; }
+.btn-success { background: #33cc33; color: #fff; }
+.btn:disabled { opacity: .4; cursor: default; }
+.toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+.msg { padding: 8px 12px; border-radius: 4px; font-size: 13px; margin-bottom: 12px; display: none; }
+.msg.info { background: #1a2a4a; border: 1px solid #5b8def; color: #8ab4ff; display: block; }
+.msg.ok { background: #1a3a1a; border: 1px solid #33cc33; color: #66ff66; display: block; }
+.msg.err { background: #3a1a1a; border: 1px solid #e84545; color: #ff6666; display: block; }
+.row { display: flex; gap: 16px; flex-wrap: wrap; }
+.col { flex: 1; min-width: 200px; }
+.stat-label { color: #6a6e88; font-size: 12px; }
+.stat-value { font-size: 24px; font-weight: 700; color: #e8e8f0; }
+.path { color: #6a6e88; font-size: 12px; margin-top: 8px; word-break: break-all; }
+</style>
+</head>
+<body>
+
+<h1>Панель управления сервером</h1>
+<p>Порт администрирования: <strong>5001</strong> | Основной порт: <strong>5000</strong></p>
+
+<div class="row" style="margin-bottom:16px">
+  <div class="col"><div class="card">
+    <div class="stat-label">Силосы</div>
+    <div class="stat-value" id="statSilos">...</div>
+  </div></div>
+  <div class="col"><div class="card">
+    <div class="stat-label">Подвески</div>
+    <div class="stat-value" id="statPendants">...</div>
+  </div></div>
+  <div class="col"><div class="card">
+    <div class="stat-label">Активные алармы</div>
+    <div class="stat-value" id="statAlerts">...</div>
+  </div></div>
+  <div class="col"><div class="card">
+    <div class="stat-label">Аптайм</div>
+    <div class="stat-value" id="statUptime">...</div>
+  </div></div>
+</div>
+
+<div class="msg" id="msg"></div>
+
+<div class="toolbar">
+  <button class="btn btn-primary" onclick="loadConfig()">Загрузить конфиг</button>
+  <button class="btn btn-success" onclick="saveConfig()">Сохранить конфиг</button>
+  <button class="btn btn-warning" onclick="clearDb()">Очистить БД</button>
+  <button class="btn btn-danger" onclick="restartPolling()">Перезапустить опрос</button>
+  <button class="btn" style="background:#1e2238;color:#8a8fa8" onclick="loadStatus()">Статус</button>
+</div>
+
+<div class="card">
+  <div class="card-title">Редактор конфигурации (termometriya-config.jsonc)</div>
+  <div class="path" id="configPath"></div>
+  <textarea id="configEditor" placeholder="Нажмите 'Загрузить конфиг'..."></textarea>
+</div>
+
+<script>
+const API = '/api/admin';
+
+function msg(text, type) {
+  const el = document.getElementById('msg');
+  el.textContent = text;
+  el.className = 'msg ' + (type || 'info');
+}
+
+async function apiFetch(url, opts) {
+  const res = await fetch(url, opts);
+  if (!res.ok) {
+    const t = await res.text().catch(() => res.statusText);
+    throw new Error(t);
+  }
+  return res.json();
+}
+
+async function loadStatus() {
+  try {
+    const s = await apiFetch(API + '/status');
+    document.getElementById('statSilos').textContent = s.siloCount;
+    document.getElementById('statPendants').textContent = s.pendantCount;
+    document.getElementById('statAlerts').textContent = s.activeAlertCount;
+    const up = Math.floor(s.uptime);
+    const h = Math.floor(up / 3600);
+    const m = Math.floor((up % 3600) / 60);
+    const sec = up % 60;
+    document.getElementById('statUptime').textContent = h + 'ч ' + m + 'м ' + sec + 'с';
+    msg('Статус загружен', 'info');
+  } catch (e) {
+    msg('Ошибка: ' + e.message, 'err');
+  }
+}
+
+async function loadConfig() {
+  try {
+    const r = await apiFetch(API + '/config');
+    document.getElementById('configEditor').value = r.content;
+    document.getElementById('configPath').textContent = r.path;
+    msg('Конфиг загружен (' + r.content.length + ' байт)', 'ok');
+  } catch (e) {
+    msg('Ошибка загрузки конфига: ' + e.message, 'err');
+  }
+}
+
+async function saveConfig() {
+  const content = document.getElementById('configEditor').value;
+  if (!content.trim()) { msg('Конфиг пуст', 'err'); return; }
+  try {
+    const r = await apiFetch(API + '/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content })
+    });
+    msg('Конфиг сохранён и применён. ' + JSON.stringify(r), 'ok');
+  } catch (e) {
+    msg('Ошибка сохранения: ' + e.message, 'err');
+  }
+}
+
+async function clearDb() {
+  if (!confirm('Очистить всю базу данных и пересоздать из конфига?')) return;
+  try {
+    const r = await apiFetch(API + '/clear-db', { method: 'POST' });
+    msg('БД очищена. ' + JSON.stringify(r), 'ok');
+    loadStatus();
+  } catch (e) {
+    msg('Ошибка: ' + e.message, 'err');
+  }
+}
+
+async function restartPolling() {
+  try {
+    const r = await apiFetch(API + '/restart', { method: 'POST' });
+    msg('Опрос перезапущен. ' + JSON.stringify(r), 'ok');
+  } catch (e) {
+    msg('Ошибка: ' + e.message, 'err');
+  }
+}
+
+loadStatus();
+</script>
+</body>
+</html>

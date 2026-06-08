@@ -15,7 +15,11 @@ var builder = WebApplication.CreateBuilder(new WebApplicationOptions
     ContentRootPath = baseDir,
 });
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new UtcDateTimeConverter());
+    });
 builder.Services.AddSignalR();
 builder.Services.AddCors(options =>
 {
@@ -74,3 +78,20 @@ if (hasStaticFiles)
 }
 
 app.Run();
+
+public class UtcDateTimeConverter : System.Text.Json.Serialization.JsonConverter<DateTime>
+{
+    public override DateTime Read(ref System.Text.Json.Utf8JsonReader reader, Type typeToConvert, System.Text.Json.JsonSerializerOptions options)
+    {
+        var str = reader.GetString();
+        if (string.IsNullOrEmpty(str)) return DateTime.UtcNow;
+        return DateTime.Parse(str, null, System.Globalization.DateTimeStyles.AdjustToUniversal | System.Globalization.DateTimeStyles.AssumeUniversal);
+    }
+
+    public override void Write(System.Text.Json.Utf8JsonWriter writer, DateTime value, System.Text.Json.JsonSerializerOptions options)
+    {
+        if (value.Kind == DateTimeKind.Unspecified)
+            value = DateTime.SpecifyKind(value, DateTimeKind.Utc);
+        writer.WriteStringValue(value.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ"));
+    }
+}
