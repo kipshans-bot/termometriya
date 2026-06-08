@@ -24,6 +24,50 @@ public class AdminController : ControllerBase
         _logger = logger;
     }
 
+    private static string GetLaunchPath()
+    {
+        var path = Environment.ProcessPath;
+        if (string.IsNullOrEmpty(path)) path = "dotnet";
+        var args = Environment.GetCommandLineArgs();
+        if (args.Length > 1 && !path.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)
+            && !path.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+            path = "dotnet";
+        return path;
+    }
+
+    private static string GetLaunchArgs()
+    {
+        var args = Environment.GetCommandLineArgs();
+        if (args.Length <= 1) return "";
+        var skip = args[0].EndsWith(".dll", StringComparison.OrdinalIgnoreCase) ? 1 : 0;
+        return string.Join(" ", args.Skip(1 + skip).Select(a => a.Contains(' ') ? $"\"{a}\"" : a));
+    }
+
+    private void RestartServer()
+    {
+        _logger.LogInformation("Initiating server restart...");
+        _ = Task.Run(async () =>
+        {
+            await Task.Delay(500);
+            try
+            {
+                var psi = new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = GetLaunchPath(),
+                    Arguments = GetLaunchArgs(),
+                    UseShellExecute = true,
+                    WorkingDirectory = Environment.CurrentDirectory,
+                };
+                System.Diagnostics.Process.Start(psi);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to restart server");
+            }
+            Environment.Exit(0);
+        });
+    }
+
     [HttpGet("status")]
     public async Task<IActionResult> GetStatus()
     {
@@ -67,8 +111,10 @@ public class AdminController : ControllerBase
 
         var config = await _elevatorConfig.LoadAsync();
         await _elevatorConfig.SyncToDbAsync(config, _db);
+        _simulator.ResetAll();
 
-        return Ok(new { status = "saved" });
+        RestartServer();
+        return Ok(new { status = "saved", restarting = true });
     }
 
     [HttpPost("clear-db")]
@@ -91,7 +137,14 @@ public class AdminController : ControllerBase
         return Ok(new { status = "cleared" });
     }
 
-    [HttpPost("restart")]
+    [HttpPost("restart-server")]
+    public IActionResult RestartServerApi()
+    {
+        RestartServer();
+        return Ok(new { status = "restarting" });
+    }
+
+    [HttpPost("restart-polling")]
     public IActionResult RestartPolling()
     {
         _simulator.ResetAll();

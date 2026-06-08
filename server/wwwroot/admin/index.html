@@ -7,35 +7,78 @@
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { font-family: 'Segoe UI', sans-serif; background: #0a0e1a; color: #e0e0e0; padding: 20px; }
-h1 { color: #5b8def; margin-bottom: 8px; font-size: 22px; }
-p { color: #6a6e88; margin-bottom: 16px; font-size: 13px; }
+h1 { color: #5b8def; margin-bottom: 4px; font-size: 22px; }
+h2 { color: #8a8fa8; font-size: 13px; font-weight: 400; margin-bottom: 16px; }
+.subtitle { color: #6a6e88; margin-bottom: 16px; font-size: 13px; }
+
+.tabs { display: flex; gap: 0; margin-bottom: 16px; border-bottom: 1px solid #1e2238; }
+.tab { padding: 10px 20px; cursor: pointer; color: #6a6e88; border: 1px solid transparent; border-bottom: none; border-radius: 6px 6px 0 0; font-size: 14px; font-weight: 600; background: transparent; transition: all .2s; }
+.tab:hover { color: #8ab4ff; background: #101420; }
+.tab.active { color: #5b8def; background: #101420; border-color: #1e2238; }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
 .card { background: #101420; border: 1px solid #1e2238; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
-.card-title { color: #8a8fa8; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+.card-title { color: #8a8fa8; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.card-title .badge { background: #5b8def; color: #fff; font-size: 10px; padding: 2px 8px; border-radius: 10px; text-transform: none; letter-spacing: 0; }
+
 textarea { width: 100%; min-height: 400px; background: #0a0e1a; color: #c8e6c9; border: 1px solid #1e2238; border-radius: 4px; padding: 12px; font-family: 'Consolas', 'Courier New', monospace; font-size: 13px; resize: vertical; outline: none; }
 textarea:focus { border-color: #5b8def; }
-.btn { padding: 8px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all .2s; }
+
+input, select { background: #0a0e1a; color: #e0e0e0; border: 1px solid #1e2238; border-radius: 4px; padding: 6px 10px; font-size: 13px; outline: none; width: 100%; transition: border-color .2s; }
+input:focus, select:focus { border-color: #5b8def; }
+input[type=checkbox] { width: auto; margin-right: 6px; accent-color: #5b8def; }
+input.small { width: 80px; }
+input.med { width: 140px; }
+
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { padding: 6px 8px; text-align: left; border-bottom: 1px solid #1a1e32; vertical-align: middle; }
+th { color: #8a8fa8; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+tr:hover { background: #14182a; }
+
+.btn { padding: 8px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all .2s; white-space: nowrap; }
 .btn:hover { opacity: .85; }
 .btn-primary { background: #5b8def; color: #fff; }
 .btn-danger { background: #e84545; color: #fff; }
 .btn-warning { background: #e8c84a; color: #000; }
-.btn-success { background: #33cc33; color: #fff; }
-.btn:disabled { opacity: .4; cursor: default; }
+.btn-success { background: #2ecc40; color: #fff; }
+.btn-sm { padding: 4px 12px; font-size: 12px; }
+.btn-xs { padding: 2px 8px; font-size: 11px; border-radius: 3px; }
+.btn-outline { background: transparent; border: 1px solid #1e2238; color: #6a6e88; }
+.btn-outline:hover { border-color: #5b8def; color: #8ab4ff; }
+.btn:disabled { opacity: .4; cursor: default; pointer-events: none; }
 .toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
 .msg { padding: 8px 12px; border-radius: 4px; font-size: 13px; margin-bottom: 12px; display: none; }
 .msg.info { background: #1a2a4a; border: 1px solid #5b8def; color: #8ab4ff; display: block; }
-.msg.ok { background: #1a3a1a; border: 1px solid #33cc33; color: #66ff66; display: block; }
+.msg.ok { background: #1a3a1a; border: 1px solid #2ecc40; color: #66ff66; display: block; }
 .msg.err { background: #3a1a1a; border: 1px solid #e84545; color: #ff6666; display: block; }
+.msg.warn { background: #3a3a1a; border: 1px solid #e8c84a; color: #ffe066; display: block; }
 .row { display: flex; gap: 16px; flex-wrap: wrap; }
 .col { flex: 1; min-width: 200px; }
 .stat-label { color: #6a6e88; font-size: 12px; }
 .stat-value { font-size: 24px; font-weight: 700; color: #e8e8f0; }
 .path { color: #6a6e88; font-size: 12px; margin-top: 8px; word-break: break-all; }
+.mb-8 { margin-bottom: 8px; }
+.mb-12 { margin-bottom: 12px; }
+.mt-8 { margin-top: 8px; }
+.flex { display: flex; align-items: center; gap: 8px; }
+.flex-wrap { flex-wrap: wrap; }
+.gap-4 { gap: 4px; }
+.gap-8 { gap: 8px; }
+.label { color: #8a8fa8; font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 2px; }
+.collapse-toggle { cursor: pointer; user-select: none; }
+.collapse-toggle:hover { color: #8ab4ff; }
+.collapse-icon { display: inline-block; transition: transform .2s; margin-right: 6px; }
+.collapse-icon.open { transform: rotate(90deg); }
+.nested { padding-left: 24px; border-left: 2px solid #1e2238; margin: 8px 0; }
+.hidden { display: none; }
+.empty-state { color: #6a6e88; font-style: italic; padding: 12px 0; text-align: center; }
 </style>
 </head>
 <body>
 
 <h1>Панель управления сервером</h1>
-<p>Порт администрирования: <strong>5001</strong> | Основной порт: <strong>5000</strong></p>
+<div class="subtitle">Порт администрирования: <strong>5001</strong> | Основной порт: <strong>5000</strong></div>
 
 <div class="row" style="margin-bottom:16px">
   <div class="col"><div class="card">
@@ -59,26 +102,75 @@ textarea:focus { border-color: #5b8def; }
 <div class="msg" id="msg"></div>
 
 <div class="toolbar">
+  <button class="btn btn-success" onclick="saveConfig()">Сохранить и перезапустить сервер</button>
   <button class="btn btn-primary" onclick="loadConfig()">Загрузить конфиг</button>
-  <button class="btn btn-success" onclick="saveConfig()">Сохранить конфиг</button>
-  <button class="btn btn-warning" onclick="clearDb()">Очистить БД</button>
-  <button class="btn btn-danger" onclick="restartPolling()">Перезапустить опрос</button>
-  <button class="btn" style="background:#1e2238;color:#8a8fa8" onclick="loadStatus()">Статус</button>
+  <button class="btn btn-warning" onclick="clearDb()">Пересоздать БД</button>
+  <button class="btn btn-danger" onclick="doRestartServer()">Жёсткий перезапуск сервера</button>
+  <button class="btn btn-outline" onclick="doRestartPolling()">Перезапустить опрос</button>
+  <button class="btn btn-outline" onclick="loadStatus()">Обновить статус</button>
 </div>
 
-<div class="card">
-  <div class="card-title">Редактор конфигурации (termometriya-config.jsonc)</div>
-  <div class="path" id="configPath"></div>
-  <textarea id="configEditor" placeholder="Нажмите 'Загрузить конфиг'..."></textarea>
+<div class="tabs">
+  <div class="tab active" data-tab="tabCultures" onclick="switchTab('tabCultures')">Культуры</div>
+  <div class="tab" data-tab="tabLines" onclick="switchTab('tabLines')">Линии</div>
+  <div class="tab" data-tab="tabRaw" onclick="switchTab('tabRaw')">Сырой JSON</div>
+</div>
+
+<div id="tabCultures" class="tab-content active">
+  <div class="card">
+    <div class="card-title">Температурные пороги культур</div>
+    <div style="overflow-x:auto">
+      <table id="culturesTable">
+        <thead>
+          <tr>
+            <th>Культура</th>
+            <th>Норма</th>
+            <th>Предупр.</th>
+            <th>Критич.</th>
+            <th>Град. пред.</th>
+            <th>Град. крит.</th>
+            <th>Отклонение</th>
+            <th>Выс. T порог</th>
+            <th>Выс. T град.</th>
+            <th>Крит. 50°C</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="culturesBody"></tbody>
+      </table>
+    </div>
+    <button class="btn btn-sm btn-outline mt-8" onclick="addCulture()">+ Добавить культуру</button>
+  </div>
+</div>
+
+<div id="tabLines" class="tab-content">
+  <div id="linesContainer"></div>
+  <button class="btn btn-sm btn-outline" onclick="addLine()">+ Добавить линию</button>
+</div>
+
+<div id="tabRaw" class="tab-content">
+  <div class="card">
+    <div class="card-title">Редактор termometriya-config.jsonc</div>
+    <div class="path" id="configPath"></div>
+    <textarea id="configEditor" placeholder="Нажмите 'Загрузить конфиг'..."></textarea>
+  </div>
 </div>
 
 <script>
 const API = '/api/admin';
+let configData = null;
+let restartPending = false;
 
 function msg(text, type) {
   const el = document.getElementById('msg');
   el.textContent = text;
+  el.style.display = 'block';
   el.className = 'msg ' + (type || 'info');
+  if (type !== 'warn') setTimeout(() => { el.style.display = 'none'; }, 8000);
+}
+
+function clearMsg() {
+  document.getElementById('msg').style.display = 'none';
 }
 
 async function apiFetch(url, opts) {
@@ -90,8 +182,16 @@ async function apiFetch(url, opts) {
   return res.json();
 }
 
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.toggle('active', t.id === name));
+  if (name === 'tabRaw' && configData) syncVisualToRaw();
+  if (name === 'tabCultures' || name === 'tabLines') syncRawToVisual();
+}
+
 async function loadStatus() {
   try {
+    if (restartPending) return;
     const s = await apiFetch(API + '/status');
     document.getElementById('statSilos').textContent = s.siloCount;
     document.getElementById('statPendants').textContent = s.pendantCount;
@@ -101,9 +201,8 @@ async function loadStatus() {
     const m = Math.floor((up % 3600) / 60);
     const sec = up % 60;
     document.getElementById('statUptime').textContent = h + 'ч ' + m + 'м ' + sec + 'с';
-    msg('Статус загружен', 'info');
   } catch (e) {
-    msg('Ошибка: ' + e.message, 'err');
+    if (!restartPending) msg('Ошибка статуса: ' + e.message, 'err');
   }
 }
 
@@ -112,13 +211,281 @@ async function loadConfig() {
     const r = await apiFetch(API + '/config');
     document.getElementById('configEditor').value = r.content;
     document.getElementById('configPath').textContent = r.path;
-    msg('Конфиг загружен (' + r.content.length + ' байт)', 'ok');
+    configData = parseJsonc(r.content);
+    renderCultures();
+    renderLines();
+    msg('Конфиг загружен', 'ok');
   } catch (e) {
-    msg('Ошибка загрузки конфига: ' + e.message, 'err');
+    msg('Ошибка загрузки: ' + e.message, 'err');
   }
 }
 
+function parseJsonc(text) {
+  const cleaned = text.replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
+  try { return JSON.parse(cleaned); }
+  catch (e) { msg('Ошибка парсинга JSON: ' + e.message, 'err'); return null; }
+}
+
+function toJsonc(obj) {
+  return JSON.stringify(obj, null, 2);
+}
+
+function syncVisualToRaw() {
+  if (!configData) return;
+  document.getElementById('configEditor').value = toJsonc(configData);
+}
+
+function syncRawToVisual() {
+  const raw = document.getElementById('configEditor').value;
+  if (!raw.trim()) return;
+  const parsed = parseJsonc(raw);
+  if (parsed) { configData = parsed; renderCultures(); renderLines(); }
+}
+
+// === Cultures ===
+function renderCultures() {
+  const tbody = document.getElementById('culturesBody');
+  if (!configData || !configData.cultures) { tbody.innerHTML = '<tr><td colspan="11"><div class="empty-state">Нет культур</div></td></tr>'; return; }
+  tbody.innerHTML = configData.cultures.map((c, i) => `
+    <tr>
+      <td><input value="${esc(c.name)}" onchange="editCulture(${i},'name',this.value)" class="med"></td>
+      <td><input type="number" step="0.1" value="${c.normTemp}" onchange="editCulture(${i},'normTemp',+this.value)" class="small"></td>
+      <td><input type="number" step="0.1" value="${c.warnTemp}" onchange="editCulture(${i},'warnTemp',+this.value)" class="small"></td>
+      <td><input type="number" step="0.1" value="${c.criticalTemp}" onchange="editCulture(${i},'criticalTemp',+this.value)" class="small"></td>
+      <td><input type="number" step="0.1" value="${c.gradientWarn}" onchange="editCulture(${i},'gradientWarn',+this.value)" class="small"></td>
+      <td><input type="number" step="0.1" value="${c.gradientCritical}" onchange="editCulture(${i},'gradientCritical',+this.value)" class="small"></td>
+      <td><input type="number" step="0.1" value="${c.deviationThreshold}" onchange="editCulture(${i},'deviationThreshold',+this.value)" class="small"></td>
+      <td><input type="number" step="0.1" value="${c.highTempThreshold}" onchange="editCulture(${i},'highTempThreshold',+this.value)" class="small"></td>
+      <td><input type="number" step="0.1" value="${c.highTempGradient}" onchange="editCulture(${i},'highTempGradient',+this.value)" class="small"></td>
+      <td><input type="number" step="0.1" value="${c.criticalHighTemp50}" onchange="editCulture(${i},'criticalHighTemp50',+this.value)" class="small"></td>
+      <td><button class="btn btn-xs btn-danger" onclick="removeCulture(${i})">x</button></td>
+    </tr>`).join('');
+}
+
+function editCulture(idx, field, val) {
+  if (configData) configData.cultures[idx][field] = val;
+}
+
+function addCulture() {
+  if (!configData) { msg('Сначала загрузите конфиг', 'warn'); return; }
+  if (!configData.cultures) configData.cultures = [];
+  configData.cultures.push({
+    name: 'Новая культура', normTemp: 25, warnTemp: 30, criticalTemp: 35,
+    gradientWarn: 1, gradientCritical: 2, deviationThreshold: 3,
+    highTempThreshold: 30, highTempGradient: 5, criticalHighTemp50: 50
+  });
+  renderCultures();
+}
+
+function removeCulture(idx) {
+  if (!configData || !configData.cultures) return;
+  if (!confirm(`Удалить культуру "${configData.cultures[idx].name}"?`)) return;
+  configData.cultures.splice(idx, 1);
+  renderCultures();
+}
+
+// === Lines ===
+function renderLines() {
+  const container = document.getElementById('linesContainer');
+  if (!configData || !configData.lines || configData.lines.length === 0) {
+    container.innerHTML = '<div class="empty-state">Нет линий. Добавьте первую линию.</div>';
+    return;
+  }
+  container.innerHTML = configData.lines.map((line, li) => `
+    <div class="card">
+      <div class="card-title collapse-toggle" onclick="toggleCollapse('lineBody${li}')">
+        <span class="collapse-icon open">&#9654;</span>
+        <span>${esc(line.name) || '(безымянная)'}</span>
+        <span class="badge">#${li + 1}</span>
+      </div>
+      <div id="lineBody${li}">
+        <div class="flex flex-wrap gap-8 mb-12">
+          <div><div class="label">Название</div><input value="${esc(line.name)}" onchange="editLine(${li},'name',this.value)"></div>
+          <div><div class="label">Порядок</div><input type="number" value="${line.displayOrder}" onchange="editLine(${li},'displayOrder',+this.value)" class="small"></div>
+          <div><div class="label">Включена</div><input type="checkbox" ${line.enabled ? 'checked' : ''} onchange="editLine(${li},'enabled',this.checked)"></div>
+          <div><div class="label">Протокол</div>
+            <select onchange="editLine(${li},'protocol',this.value)" style="width:auto">
+              <option ${line.protocol==='RTU'?'selected':''}>RTU</option>
+              <option ${line.protocol==='TCP'?'selected':''}>TCP</option>
+            </select>
+          </div>
+          ${line.protocol === 'RTU' ? `
+          <div><div class="label">COM порт</div><input value="${esc(line.comPort)}" onchange="editLine(${li},'comPort',this.value)" class="small"></div>
+          <div><div class="label">Baud</div><input type="number" value="${line.baudRate}" onchange="editLine(${li},'baudRate',+this.value)" class="small"></div>
+          <div><div class="label">Data bits</div><input type="number" value="${line.dataBits}" onchange="editLine(${li},'dataBits',+this.value)" class="small"></div>
+          <div><div class="label">Parity</div>
+            <select onchange="editLine(${li},'parity',this.value)" style="width:auto">
+              <option ${line.parity==='None'?'selected':''}>None</option>
+              <option ${line.parity==='Even'?'selected':''} selected>Even</option>
+              <option ${line.parity==='Odd'?'selected':''}>Odd</option>
+            </select>
+          </div>
+          <div><div class="label">Stop bits</div>
+            <select onchange="editLine(${li},'stopBits',this.value)" style="width:auto">
+              <option ${line.stopBits==='One'?'selected':''}>One</option>
+              <option ${line.stopBits==='Two'?'selected':''}>Two</option>
+            </select>
+          </div>` : `
+          <div><div class="label">IP адрес</div><input value="${esc(line.ipAddress)}" onchange="editLine(${li},'ipAddress',this.value)"></div>
+          <div><div class="label">Порт</div><input type="number" value="${line.ipPort}" onchange="editLine(${li},'ipPort',+this.value)" class="small"></div>`}
+        </div>
+        ${renderBlocks(line, li)}
+        <button class="btn btn-sm btn-outline mt-8" onclick="addBlock(${li})">+ Добавить блок</button>
+        <button class="btn btn-sm btn-danger mt-8" style="margin-left:8px" onclick="removeLine(${li})">Удалить линию</button>
+      </div>
+    </div>`).join('');
+}
+
+function renderBlocks(line, li) {
+  if (!line.blocks || line.blocks.length === 0)
+    return '<div class="empty-state">Нет блоков</div>';
+  return line.blocks.map((block, bi) => `
+    <div class="nested">
+      <div class="flex flex-wrap gap-8 mb-8">
+        <div class="card-title" style="margin-bottom:0"><span>Блок #${bi + 1}</span></div>
+        <div><div class="label">Slave ID</div><input type="number" value="${block.slaveId}" onchange="editBlock(${li},${bi},'slaveId',+this.value)" class="small"></div>
+        <button class="btn btn-xs btn-danger" onclick="removeBlock(${li},${bi})">x</button>
+      </div>
+      ${renderSilos(line, li, block, bi)}
+      <button class="btn btn-xs btn-outline mt-8" onclick="addSilo(${li},${bi})">+ Силос</button>
+    </div>`).join('');
+}
+
+function renderSilos(line, li, block, bi) {
+  if (!block.silos || block.silos.length === 0)
+    return '<div class="empty-state">Нет силосов</div>';
+  let cultures = '';
+  if (configData && configData.cultures)
+    cultures = configData.cultures.map(c => `<option ${block.silos[0] && block.silos[0].culture === c.name ? 'selected' : ''}>${esc(c.name)}</option>`).join('');
+
+  return '<div style="overflow-x:auto"><table><thead><tr><th>№</th><th>Культура</th><th>Заполнение</th><th>Ёмкость</th><th>Датчики</th><th></th></tr></thead><tbody>' +
+    block.silos.map((silo, si) => `
+      <tr>
+        <td><input type="number" value="${silo.number}" onchange="editSilo(${li},${bi},${si},'number',+this.value)" class="small"></td>
+        <td>
+          <select onchange="editSilo(${li},${bi},${si},'culture',this.value)" style="width:auto;min-width:100px">
+            <option value="">—</option>
+            ${(configData && configData.cultures ? configData.cultures.map(c => `<option value="${esc(c.name)}" ${silo.culture === c.name ? 'selected' : ''}>${esc(c.name)}</option>`) : []).join('')}
+          </select>
+        </td>
+        <td><input type="number" step="1" value="${silo.fillLevel}" onchange="editSilo(${li},${bi},${si},'fillLevel',+this.value)" class="small"></td>
+        <td><input type="number" step="1" value="${silo.capacity}" onchange="editSilo(${li},${bi},${si},'capacity',+this.value)" class="small"></td>
+        <td>
+          ${(silo.sensors || []).map((sensor, si2) =>
+            `<span class="flex gap-4" style="margin:2px 0">
+              <span style="color:#8a8fa8;font-size:11px">вх.${sensor.cableInput}</span>
+              <span style="color:#8a8fa8;font-size:11px">${sensor.points}т.</span>
+              ${sensor.isCentral ? '<span style="color:#e8c84a;font-size:11px">Ц</span>' : ''}
+              <button class="btn btn-xs btn-danger" onclick="removeSensor(${li},${bi},${si},${si2})" style="padding:0 4px;font-size:10px">x</button>
+            </span>`
+          ).join('') || '<span class="empty-state" style="padding:0;font-size:11px">нет</span>'}
+          <button class="btn btn-xs btn-outline" style="font-size:10px" onclick="addSensor(${li},${bi},${si})">+</button>
+        </td>
+        <td><button class="btn btn-xs btn-danger" onclick="removeSilo(${li},${bi},${si})">x</button></td>
+      </tr>`).join('') +
+    '</tbody></table></div>';
+}
+
+// === Line/Block/Silo/Sensor edit helpers ===
+function editLine(li, field, val) {
+  if (configData && configData.lines) configData.lines[li][field] = val;
+}
+
+function editBlock(li, bi, field, val) {
+  if (configData && configData.lines && configData.lines[li].blocks) configData.lines[li].blocks[bi][field] = val;
+}
+
+function editSilo(li, bi, si, field, val) {
+  if (configData && configData.lines && configData.lines[li].blocks && configData.lines[li].blocks[bi].silos)
+    configData.lines[li].blocks[bi].silos[si][field] = val;
+}
+
+function toggleCollapse(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.toggle('hidden');
+  const icon = el?.previousElementSibling?.querySelector('.collapse-icon');
+  if (icon) icon.classList.toggle('open');
+}
+
+function addLine() {
+  if (!configData) { msg('Сначала загрузите конфиг', 'warn'); return; }
+  if (!configData.lines) configData.lines = [];
+  configData.lines.push({
+    name: 'Новая линия', displayOrder: configData.lines.length + 1, enabled: true,
+    protocol: 'RTU', comPort: 'COM1', baudRate: 9600, dataBits: 8, parity: 'Even', stopBits: 'One',
+    ipAddress: '', ipPort: 502, blocks: []
+  });
+  renderLines();
+}
+
+function removeLine(li) {
+  if (!configData || !configData.lines) return;
+  if (!confirm(`Удалить линию "${configData.lines[li].name}"?`)) return;
+  configData.lines.splice(li, 1);
+  renderLines();
+}
+
+function addBlock(li) {
+  if (!configData || !configData.lines) return;
+  if (!configData.lines[li].blocks) configData.lines[li].blocks = [];
+  configData.lines[li].blocks.push({ slaveId: configData.lines[li].blocks.length + 1, silos: [] });
+  renderLines();
+}
+
+function removeBlock(li, bi) {
+  if (!configData || !configData.lines || !configData.lines[li].blocks) return;
+  if (!confirm('Удалить блок?')) return;
+  configData.lines[li].blocks.splice(bi, 1);
+  renderLines();
+}
+
+function addSilo(li, bi) {
+  if (!configData || !configData.lines || !configData.lines[li].blocks) return;
+  const silos = configData.lines[li].blocks[bi].silos;
+  const nextNum = silos.length > 0 ? Math.max(...silos.map(s => s.number)) + 1 : 1;
+  const defaultCulture = (configData.cultures && configData.cultures.length > 0) ? configData.cultures[0].name : '';
+  silos.push({ number: nextNum, culture: defaultCulture, fillLevel: 0, capacity: 1000, sensors: [] });
+  renderLines();
+}
+
+function removeSilo(li, bi, si) {
+  if (!configData || !configData.lines) return;
+  if (!confirm('Удалить силос?')) return;
+  configData.lines[li].blocks[bi].silos.splice(si, 1);
+  renderLines();
+}
+
+function addSensor(li, bi, si) {
+  if (!configData || !configData.lines) return;
+  const silo = configData.lines[li].blocks[bi].silos[si];
+  if (!silo.sensors) silo.sensors = [];
+  const nextInput = silo.sensors.length > 0 ? Math.max(...silo.sensors.map(s => s.cableInput)) + 1 : 0;
+  silo.sensors.push({ cableInput: nextInput, points: 30, isCentral: false });
+  renderLines();
+}
+
+function removeSensor(li, bi, si, si2) {
+  if (!configData || !configData.lines) return;
+  configData.lines[li].blocks[bi].silos[si].sensors.splice(si2, 1);
+  renderLines();
+}
+
+// === Raw JSON tab ===
+function formatJson() {
+  const ta = document.getElementById('configEditor');
+  try {
+    const parsed = JSON.parse(ta.value);
+    ta.value = JSON.stringify(parsed, null, 2);
+    syncRawToVisual();
+    msg('JSON отформатирован', 'ok');
+  } catch (e) {
+    msg('Ошибка форматирования: ' + e.message, 'err');
+  }
+}
+
+// === Save, Restart, Clear ===
 async function saveConfig() {
+  syncVisualToRaw();
   const content = document.getElementById('configEditor').value;
   if (!content.trim()) { msg('Конфиг пуст', 'err'); return; }
   try {
@@ -127,7 +494,9 @@ async function saveConfig() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ content })
     });
-    msg('Конфиг сохранён и применён. ' + JSON.stringify(r), 'ok');
+    msg('Конфиг сохранён. Сервер перезапускается...', 'ok');
+    restartPending = true;
+    waitForRestart();
   } catch (e) {
     msg('Ошибка сохранения: ' + e.message, 'err');
   }
@@ -144,13 +513,52 @@ async function clearDb() {
   }
 }
 
-async function restartPolling() {
+async function doRestartServer() {
+  if (!confirm('Перезапустить сервер?')) return;
   try {
-    const r = await apiFetch(API + '/restart', { method: 'POST' });
+    const r = await apiFetch(API + '/restart-server', { method: 'POST' });
+    msg('Сервер перезапускается...', 'warn');
+    restartPending = true;
+    waitForRestart();
+  } catch (e) {
+    msg('Ошибка: ' + e.message, 'err');
+  }
+}
+
+async function doRestartPolling() {
+  try {
+    const r = await apiFetch(API + '/restart-polling', { method: 'POST' });
     msg('Опрос перезапущен. ' + JSON.stringify(r), 'ok');
   } catch (e) {
     msg('Ошибка: ' + e.message, 'err');
   }
+}
+
+function waitForRestart() {
+  let attempts = 0;
+  const maxAttempts = 60;
+  const interval = setInterval(async () => {
+    attempts++;
+    try {
+      await fetch(API + '/status', { signal: AbortSignal.timeout(3000) });
+      clearInterval(interval);
+      restartPending = false;
+      msg('Сервер перезапущен!', 'ok');
+      await loadConfig();
+      loadStatus();
+    } catch (e) {
+      if (attempts >= maxAttempts) {
+        clearInterval(interval);
+        restartPending = false;
+        msg('Сервер не перезапустился за ' + maxAttempts + ' попыток. Проверьте статус вручную.', 'err');
+      }
+    }
+  }, 2000);
+}
+
+function esc(s) {
+  if (s == null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
 loadStatus();
