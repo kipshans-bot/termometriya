@@ -1,0 +1,331 @@
+{
+  // ===================================================================
+  //  ЕДИНЫЙ КОНФИГУРАЦИОННЫЙ ФАЙЛ СИСТЕМЫ ТЕРМОМЕТРИИ
+  //  termometriya-config.jsonc
+  //
+  //  Объединяет описание оборудования (BKT-12) и структуру элеватора.
+  //  Каждая линия содержит блоки BKT-12, внутри блоков — силосы,
+  //  внутри силосов — подвесные кабели (сенсоры) с привязкой к
+  //  физическим входам BKT-12 (cableInput).
+  //
+  //  Формула Modbus-регистра: REG = 15 + cableInput * 30
+  //  Например, cableInput=0 → регистр 15, cableInput=1 → 45, и т.д.
+  // ===================================================================
+
+  // ---- КУЛЬТУРЫ (зерновые) с температурными порогами ----------------
+  "cultures": [
+    {
+      "name": "Пшеница",
+      "normTemp": 25,           // нормальная температура, °C
+      "warnTemp": 30,           // предупреждение, °C
+      "criticalTemp": 35,       // критическая, °C
+      "gradientWarn": 1.0,      // градиент предупреждения, °C/ч
+      "gradientCritical": 2.0,  // градиент критический, °C/ч
+      "deviationThreshold": 3.0,// отклонение от средней, °C
+      "highTempThreshold": 30,  // порог высокой температуры, °C
+      "highTempGradient": 5.0,  // градиент при высокой температуре, °C/ч
+      "criticalHighTemp50": 50  // абсолютный критический порог, °C
+    },
+    {
+      "name": "Кукуруза",
+      "normTemp": 25, "warnTemp": 30, "criticalTemp": 35,
+      "gradientWarn": 1.0, "gradientCritical": 2.0,
+      "deviationThreshold": 3.0,
+      "highTempThreshold": 30, "highTempGradient": 5.0,
+      "criticalHighTemp50": 50
+    },
+    {
+      "name": "Ячмень",
+      "normTemp": 25, "warnTemp": 30, "criticalTemp": 35,
+      "gradientWarn": 1.0, "gradientCritical": 2.0,
+      "deviationThreshold": 3.0,
+      "highTempThreshold": 30, "highTempGradient": 5.0,
+      "criticalHighTemp50": 50
+    },
+    {
+      "name": "Подсолнечник",
+      "normTemp": 20, "warnTemp": 25, "criticalTemp": 30,
+      "gradientWarn": 0.8, "gradientCritical": 1.5,
+      "deviationThreshold": 2.0,
+      "highTempThreshold": 28, "highTempGradient": 4.0,
+      "criticalHighTemp50": 45
+    },
+    {
+      "name": "Гречиха",
+      "normTemp": 22, "warnTemp": 28, "criticalTemp": 34,
+      "gradientWarn": 1.0, "gradientCritical": 2.0,
+      "deviationThreshold": 3.0,
+      "highTempThreshold": 28, "highTempGradient": 5.0,
+      "criticalHighTemp50": 48
+    },
+    {
+      "name": "Овёс",
+      "normTemp": 25, "warnTemp": 32, "criticalTemp": 38,
+      "gradientWarn": 1.2, "gradientCritical": 2.5,
+      "deviationThreshold": 3.5,
+      "highTempThreshold": 32, "highTempGradient": 5.0,
+      "criticalHighTemp50": 50
+    }
+  ],
+
+  // ---- ЛИНИИ ЭЛЕВАТОРА --------------------------------------------
+  "lines": [
+    // ===================== ЛИНИЯ 1 (RTU, COM2) =====================
+    {
+      "name": "Линия 1",
+      "displayOrder": 1,
+      "enabled": true,
+
+      // Транспорт: RTU (RS-485) через COM2
+      "protocol": "RTU",
+      "comPort": "COM2",
+      "baudRate": 9600,
+      "dataBits": 8,
+      "parity": "Even",
+      "stopBits": "One",
+
+      // Блоки BKT-12 на этой линии
+      "blocks": [
+        // -- Блок 1 (slaveId=1): силосы 1 и 2, кабели 0-11 --
+        {
+          "slaveId": 1,
+          "silos": [
+            {
+              // Силос №1 (глобальный номер)
+              "number": 1,
+              "culture": "Гречиха",
+              "capacity": 1000,
+              "fillLevel": 78,
+
+              // Подвесные кабели, подключенные к этому силосу.
+              // cableInput = номер физического входа BKT-12.
+              // Регистр Modbus = 15 + cableInput * 30.
+              // positionIndex (используется в ПО) = cableInput.
+              "sensors": [
+                // Кабель на входе 0: центральная вертикальная подвеска, 18 точек
+                { "cableInput": 0, "points": 16, "isCentral": true },
+                // Кабели на входах 1-5: периферийные подвески, по 16 точек
+                { "cableInput": 1, "points": 14 },
+                { "cableInput": 2, "points": 14 },
+                { "cableInput": 3, "points": 14 },
+                { "cableInput": 4, "points": 14 },
+                { "cableInput": 5, "points": 14 }
+              ]
+            },
+            {
+              "number": 2,
+              "culture": "Гречиха",
+              "capacity": 1000,
+              "fillLevel": 81,
+              "sensors": [
+                { "cableInput": 6,  "points": 16, "isCentral": true },
+                { "cableInput": 7,  "points": 14 },
+                { "cableInput": 8,  "points": 14 },
+                { "cableInput": 9,  "points": 14 },
+                { "cableInput": 10, "points": 14 },
+                { "cableInput": 11, "points": 14 }
+              ]
+            }
+          ]
+        },
+
+        // -- Блок 2 (slaveId=2): силосы 4 и 3, кабели 2-5, 8-11 --
+        {
+          "slaveId": 2,
+          "silos": [
+            {
+              "number": 3,
+              "culture": "Гречиха",
+              "capacity": 1000,
+              "fillLevel": 87,
+              "sensors": [
+                // Силос 4 занимает кабели 2-5 (позиции 2-5)
+                { "cableInput": 0, "points": 16, "isCentral": true },
+                // Кабели на входах 1-5: периферийные подвески, по 16 точек
+                { "cableInput": 1, "points": 14 },
+                { "cableInput": 2, "points": 14 },
+                { "cableInput": 3, "points": 14 },
+                { "cableInput": 4, "points": 14 },
+                { "cableInput": 5, "points": 14 }
+              ]
+            },
+            {
+              "number": 4,
+              "culture": "Гречиха",
+              "capacity": 1000,
+              "fillLevel": 84,
+              "sensors": [
+                // Силос 3 занимает кабели 8-11 (позиции 8-11)
+                { "cableInput": 6,  "points": 16, "isCentral": true },
+                { "cableInput": 7,  "points": 14 },
+                { "cableInput": 8,  "points": 14 },
+                { "cableInput": 9,  "points": 14 },
+                { "cableInput": 10, "points": 14 },
+                { "cableInput": 11, "points": 14 }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+
+    // ===================== ЛИНИЯ 2 (RTU, COM2) =====================
+    // Зарезервирована, оборудование не подключено (enabled: false)
+    {
+      "name": "Линия 2",
+      "displayOrder": 2,
+      "enabled": false,
+
+      "protocol": "RTU",
+      "comPort": "COM2",
+      "baudRate": 9600,
+      "dataBits": 8,
+      "parity": "Even",
+      "stopBits": "One",
+
+      "blocks": [
+        {
+          "slaveId": 3,
+          "silos": [
+            {
+              "number": 6,
+              "culture": "Гречиха",
+              "capacity": 1000,
+              "fillLevel": 90,
+              "sensors": [
+                { "cableInput": 0, "points": 18, "isCentral": true },
+                { "cableInput": 1, "points": 16 },
+                { "cableInput": 2, "points": 16 },
+                { "cableInput": 3, "points": 16 },
+                { "cableInput": 4, "points": 16 },
+                { "cableInput": 5, "points": 16 }
+              ]
+            },
+            {
+              "number": 7,
+              "culture": "Овёс",
+              "capacity": 1000,
+              "fillLevel": 93,
+              "sensors": [
+                { "cableInput": 6,  "points": 18, "isCentral": true },
+                { "cableInput": 7,  "points": 16 },
+                { "cableInput": 8,  "points": 16 },
+                { "cableInput": 9,  "points": 16 },
+                { "cableInput": 10, "points": 16 }
+              ]
+            }
+          ]
+        },
+        {
+          "slaveId": 4,
+          "silos": [
+            {
+              "number": 8,
+              "culture": "Кукуруза",
+              "capacity": 1000,
+              "fillLevel": 79,
+              "sensors": [
+                { "cableInput": 2, "points": 16 },
+                { "cableInput": 3, "points": 16 },
+                { "cableInput": 4, "points": 16 },
+                { "cableInput": 5, "points": 18, "isCentral": true }
+              ]
+            },
+            {
+              "number": 9,
+              "culture": "Пшеница",
+              "capacity": 1000,
+              "fillLevel": 76,
+              "sensors": [
+                { "cableInput": 8,  "points": 16 },
+                { "cableInput": 9,  "points": 16 },
+                { "cableInput": 10, "points": 16 },
+                { "cableInput": 11, "points": 18, "isCentral": true }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+
+    // ===================== ЛИНИЯ 3 (TCP) ============================
+    {
+      "name": "Линия 3",
+      "displayOrder": 3,
+      "enabled": true,
+
+      // Транспорт: Modbus TCP
+      "protocol": "TCP",
+      "ipAddress": "192.168.20.7",
+      "ipPort": 502,
+
+      "blocks": [
+        // -- Блок A (slaveId=2): силосы 10 и 9, кабели 1-5, 7-11 --
+        {
+          "slaveId": 2,
+          "silos": [
+            {
+              "number": 11,
+              "culture": "Овёс",
+              "capacity": 1000,
+              "fillLevel": 85,
+              "sensors": [
+                // Кабель 0 отсутствует (не подключен / повреждён)
+                { "cableInput": 11, "points": 16 },
+                { "cableInput": 10, "points": 16 },
+                { "cableInput": 7, "points": 18 , "isCentral": true },
+                { "cableInput": 9, "points": 16 },
+                { "cableInput": 8, "points": 16 }
+              ]
+            },
+            {
+              "number": 12,
+              "culture": "Овёс",
+              "capacity": 1000,
+              "fillLevel": 82,
+              "sensors": [
+                // Кабель 6 отсутствует (не подключен / повреждён)
+                { "cableInput": 5, "points": 16 },
+                { "cableInput": 4, "points": 16 },
+                { "cableInput": 1, "points": 18 , "isCentral": true },
+                { "cableInput": 3, "points": 16 },
+                { "cableInput": 2, "points": 16 }
+              ]
+            }
+          ]
+        },
+
+        // -- Блок B (slaveId=3): силосы 12 и 11, кабели 2-5, 8-11 --
+        {
+          "slaveId": 3,
+          "silos": [
+            {
+              "number": 13,
+              "culture": "Овёс",
+              "capacity": 1000,
+              "fillLevel": 91,
+              "sensors": [
+                { "cableInput": 11, "points": 16 },
+                { "cableInput": 10, "points": 16 },
+                { "cableInput": 8, "points": 18 , "isCentral": true },
+                { "cableInput": 9, "points": 16 }
+              ]
+            },
+            {
+              "number": 14,
+              "culture": "Овёс",
+              "capacity": 1000,
+              "fillLevel": 88,
+              "sensors": [
+                { "cableInput": 5, "points": 16 },
+                { "cableInput": 4, "points": 16 },
+                { "cableInput": 2, "points": 18 , "isCentral": true },
+                { "cableInput": 3, "points": 16 }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

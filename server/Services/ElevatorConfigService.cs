@@ -1,53 +1,9 @@
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using Termometriya.Server.Data;
 using Termometriya.Server.Models;
 
 namespace Termometriya.Server.Services;
-
-public class ElevatorConfig
-{
-    public List<CultureConfig> Cultures { get; set; } = [];
-    public List<LineConfig> Lines { get; set; } = [];
-}
-
-public class CultureConfig
-{
-    public string Name { get; set; } = string.Empty;
-    public double NormTemp { get; set; } = 25;
-    public double WarnTemp { get; set; } = 30;
-    public double CriticalTemp { get; set; } = 35;
-    public double GradientWarn { get; set; } = 1.0;
-    public double GradientCritical { get; set; } = 2.0;
-    public double DeviationThreshold { get; set; } = 3.0;
-    public double HighTempThreshold { get; set; } = 30;
-    public double HighTempGradient { get; set; } = 5.0;
-    public double CriticalHighTemp50 { get; set; } = 50;
-}
-
-public class LineConfig
-{
-    public string Name { get; set; } = string.Empty;
-    public int DisplayOrder { get; set; }
-    public List<SiloConfig> Silos { get; set; } = [];
-}
-
-public class SiloConfig
-{
-    public int Number { get; set; }
-    public double FillLevel { get; set; }
-    public double Capacity { get; set; } = 1000;
-    public string CultureName { get; set; } = string.Empty;
-    public List<PendantConfig> Pendants { get; set; } = [];
-}
-
-public class PendantConfig
-{
-    public int PositionIndex { get; set; }
-    public int PointCount { get; set; } = 30;
-    public bool IsCentral { get; set; }
-}
 
 public class ElevatorConfigService
 {
@@ -59,32 +15,54 @@ public class ElevatorConfigService
     {
         _scopeFactory = scopeFactory;
         _logger = logger;
-        _configPath = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "elevator-config.jsonc");
+        var bd = AppContext.BaseDirectory;
+        var cwd = Directory.GetCurrentDirectory();
+        var asmDir = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) ?? ".";
+        _logger.LogInformation("Elevator config search: BaseDir={BaseDir}, CWD={Cwd}, AsmDir={AsmDir}", bd, cwd, asmDir);
+
+        _configPath = Path.Combine(bd, "..", "..", "..", "termometriya-config.jsonc");
         if (!File.Exists(_configPath))
-            _configPath = Path.Combine(Directory.GetCurrentDirectory(), "elevator-config.jsonc");
+            _configPath = Path.Combine(cwd, "termometriya-config.jsonc");
+        if (!File.Exists(_configPath))
+            _configPath = Path.Combine(bd, "termometriya-config.jsonc");
+        if (!File.Exists(_configPath))
+            _configPath = Path.Combine(asmDir, "termometriya-config.jsonc");
+        if (!File.Exists(_configPath))
+            _configPath = "";
+
+        _logger.LogInformation("Resolved config path: {Path}, exists={Exists}", _configPath, File.Exists(_configPath));
     }
 
-    public async Task<ElevatorConfig> LoadAsync()
+    public async Task<ThermometryConfig> LoadAsync()
     {
         if (!File.Exists(_configPath))
-            return new ElevatorConfig();
+        {
+            _logger.LogWarning("Config not found at {Path}", _configPath);
+            return new ThermometryConfig();
+        }
 
         var json = await File.ReadAllTextAsync(_configPath);
-        var options = new JsonSerializerOptions { ReadCommentHandling = JsonCommentHandling.Skip };
-        return JsonSerializer.Deserialize<ElevatorConfig>(json, options) ?? new();
+        var options = new JsonSerializerOptions { ReadCommentHandling = JsonCommentHandling.Skip, PropertyNameCaseInsensitive = true };
+        return JsonSerializer.Deserialize<ThermometryConfig>(json, options) ?? new();
     }
 
-    public async Task SaveAsync(ElevatorConfig config)
+    public async Task SaveAsync(ThermometryConfig config)
     {
         var options = new JsonSerializerOptions { WriteIndented = true };
         var json = JsonSerializer.Serialize(config, options);
         await File.WriteAllTextAsync(_configPath, json);
     }
 
-    public async Task SyncToDbAsync(ElevatorConfig config)
+    public async Task SyncToDbAsync(ThermometryConfig config, AppDbContext db)
     {
-        using var scope = _scopeFactory.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        _logger.LogInformation("SyncToDbAsync: {Cultures} cultures, {Lines} lines", config.Cultures.Count, config.Lines.Count);
+
+        db.AlertEvents.RemoveRange(db.AlertEvents);
+        db.SensorReadings.RemoveRange(db.SensorReadings);
+        db.Thermopendants.RemoveRange(db.Thermopendants);
+        db.Silos.RemoveRange(db.Silos);
+        await db.SaveChangesAsync();
+        _logger.LogInformation("Cleared existing silos/pendants/readings");
 
         // Cultures
         foreach (var cc in config.Cultures)
@@ -121,8 +99,8 @@ public class ElevatorConfigService
         }
         await db.SaveChangesAsync();
 
-        // Lines + Silos + Pendants
-        var displayOrder = 0;
+        // Lines -> Blocks -> Silos -> Sensors -> DB Silos + Pendants
+        int displayOrder = 0;
         foreach (var lc in config.Lines)
         {
             displayOrder++;
@@ -136,61 +114,63 @@ public class ElevatorConfigService
                 await db.SaveChangesAsync();
             }
 
-            foreach (var sc in lc.Silos)
+            foreach (var block in lc.Blocks)
             {
-                var silo = await db.Silos.FirstOrDefaultAsync(s => s.LineId == line.Id && s.Number == sc.Number);
-                var culture = await db.Cultures.FirstOrDefaultAsync(c => c.Name == sc.CultureName);
+                foreach (var sc in block.Silos)
+                {
+                    var silo = await db.Silos.FirstOrDefaultAsync(s => s.LineId == line.Id && s.Number == sc.Number);
+                    var culture = await db.Cultures.FirstOrDefaultAsync(c => c.Name == sc.Culture);
 
-                if (silo != null)
-                {
-                    silo.FillLevel = sc.FillLevel;
-                    silo.Capacity = sc.Capacity;
-                    if (culture != null) silo.CultureId = culture.Id;
-                }
-                else
-                {
-                    silo = new Silo
+                    if (silo != null)
                     {
-                        LineId = line.Id,
-                        Number = sc.Number,
-                        FillLevel = sc.FillLevel,
-                        Capacity = sc.Capacity,
-                        CultureId = culture?.Id ?? 1
-                    };
-                    db.Silos.Add(silo);
-                    await db.SaveChangesAsync();
-                }
-
-                // Sync pendants
-                var existingPendants = await db.Thermopendants
-                    .Where(t => t.SiloId == silo.Id)
-                    .ToListAsync();
-
-                foreach (var existingP in existingPendants)
-                    existingP.IsActive = false;
-
-                for (int i = 0; i < sc.Pendants.Count; i++)
-                {
-                    var pc = sc.Pendants[i];
-                    var match = existingPendants.FirstOrDefault(t => t.PositionIndex == pc.PositionIndex);
-                    if (match != null)
-                    {
-                        match.IsActive = true;
-                        match.PointCount = pc.PointCount;
-                        match.DisplayOrder = i;
-                        match.IsCentral = pc.IsCentral;
+                        silo.FillLevel = sc.FillLevel;
+                        silo.Capacity = sc.Capacity;
+                        if (culture != null) silo.CultureId = culture.Id;
                     }
                     else
                     {
-                        db.Thermopendants.Add(new Thermopendant
+                        silo = new Silo
                         {
-                            SiloId = silo.Id,
-                            PositionIndex = pc.PositionIndex,
-                            PointCount = pc.PointCount,
-                            DisplayOrder = i,
-                            IsActive = true,
-                            IsCentral = pc.IsCentral
-                        });
+                            LineId = line.Id,
+                            Number = sc.Number,
+                            FillLevel = sc.FillLevel,
+                            Capacity = sc.Capacity,
+                            CultureId = culture?.Id ?? 1
+                        };
+                        db.Silos.Add(silo);
+                        await db.SaveChangesAsync();
+                    }
+
+                    var existingPendants = await db.Thermopendants
+                        .Where(t => t.SiloId == silo.Id)
+                        .ToListAsync();
+
+                    foreach (var existingP in existingPendants)
+                        existingP.IsActive = false;
+
+                    for (int i = 0; i < sc.Sensors.Count; i++)
+                    {
+                        var sensor = sc.Sensors[i];
+                        var match = existingPendants.FirstOrDefault(t => t.PositionIndex == sensor.CableInput);
+                        if (match != null)
+                        {
+                            match.IsActive = true;
+                            match.PointCount = sensor.Points;
+                            match.DisplayOrder = i;
+                            match.IsCentral = sensor.IsCentral;
+                        }
+                        else
+                        {
+                            db.Thermopendants.Add(new Thermopendant
+                            {
+                                SiloId = silo.Id,
+                                PositionIndex = sensor.CableInput,
+                                PointCount = sensor.Points,
+                                DisplayOrder = i,
+                                IsActive = true,
+                                IsCentral = sensor.IsCentral
+                            });
+                        }
                     }
                 }
             }
@@ -198,7 +178,7 @@ public class ElevatorConfigService
         await db.SaveChangesAsync();
     }
 
-    public async Task<ElevatorConfig> LoadFromDbAsync()
+    public async Task<ThermometryConfig> LoadFromDbAsync()
     {
         using var scope = _scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -211,7 +191,7 @@ public class ElevatorConfigService
 
         var cultures = await db.Cultures.ToListAsync();
 
-        return new ElevatorConfig
+        return new ThermometryConfig
         {
             Cultures = cultures.Select(c => new CultureConfig
             {
@@ -230,43 +210,43 @@ public class ElevatorConfigService
             {
                 Name = l.Name,
                 DisplayOrder = l.DisplayOrder,
-                Silos = l.Silos.OrderBy(s => s.Number).Select(s => new SiloConfig
-                {
-                    Number = s.Number,
-                    FillLevel = s.FillLevel,
-                    Capacity = s.Capacity,
-                    CultureName = s.Culture?.Name ?? "",
-                    Pendants = s.Thermopendants.Where(t => t.IsActive).OrderBy(t => t.DisplayOrder).Select(t => new PendantConfig
+                // DB не хранит блоки и транспорт — возвращаем только silos в блоке (один блок на все)
+                Blocks =
+                [
+                    new BlockConfig
                     {
-                        PositionIndex = t.PositionIndex,
-                        PointCount = t.PointCount,
-                        IsCentral = t.IsCentral
-                    }).ToList()
-                }).ToList()
+                        SlaveId = 0,
+                        Silos = l.Silos.OrderBy(s => s.Number).Select(s => new SiloConfig
+                        {
+                            Number = s.Number,
+                            FillLevel = s.FillLevel,
+                            Capacity = s.Capacity,
+                            Culture = s.Culture?.Name ?? "",
+                            Sensors = s.Thermopendants.Where(t => t.IsActive).OrderBy(t => t.DisplayOrder).Select(t => new SensorConfig
+                            {
+                                CableInput = t.PositionIndex,
+                                Points = t.PointCount,
+                                IsCentral = t.IsCentral
+                            }).ToList()
+                        }).ToList()
+                    }
+                ]
             }).ToList()
         };
     }
 
-    public async Task InitFromFileIfNeededAsync()
+    public async Task<bool> InitFromFileIfNeededAsync(AppDbContext db)
     {
         if (!File.Exists(_configPath))
         {
-            _logger.LogInformation("No elevator-config.jsonc found, skipping file init");
-            return;
+            _logger.LogInformation("No termometriya-config.jsonc found, skipping file init");
+            return false;
         }
 
-        using var scope = _scopeFactory.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
-        if (await db.ElevatorLines.AnyAsync())
-        {
-            _logger.LogInformation("DB already has data, skipping file init");
-            return;
-        }
-
-        _logger.LogInformation("Loading config from elevator-config.jsonc...");
+        _logger.LogInformation("Loading config from termometriya-config.jsonc...");
         var config = await LoadAsync();
-        await SyncToDbAsync(config);
-        _logger.LogInformation("Config synced to DB from elevator-config.jsonc");
+        await SyncToDbAsync(config, db);
+        _logger.LogInformation("Config synced to DB from termometriya-config.jsonc");
+        return true;
     }
 }

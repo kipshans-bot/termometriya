@@ -92,7 +92,13 @@ public class DataPollingService : BackgroundService
         using var scope = _scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var config = await db.PollingConfigs.FirstOrDefaultAsync();
-        return config?.GetCurrentInterval() ?? 3600;
+        if (config == null)
+        {
+            config = new PollingConfig();
+            db.PollingConfigs.Add(config);
+            await db.SaveChangesAsync();
+        }
+        return config.GetCurrentInterval();
     }
 
     private async Task UpdatePollingModeAsync(List<SensorReading> readings)

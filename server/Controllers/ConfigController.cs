@@ -1,5 +1,5 @@
-using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
+using Termometriya.Server.Data;
 using Termometriya.Server.Models;
 using Termometriya.Server.Services;
 using Termometriya.Server.Services.DqtService;
@@ -12,38 +12,26 @@ public class ConfigController : ControllerBase
 {
     private readonly ModbusTcpSimulator _simulator;
     private readonly ElevatorConfigService _elevatorConfig;
+    private readonly AppDbContext _db;
 
-    public ConfigController(ModbusTcpSimulator simulator, ElevatorConfigService elevatorConfig)
+    public ConfigController(ModbusTcpSimulator simulator, ElevatorConfigService elevatorConfig, AppDbContext db)
     {
         _simulator = simulator;
         _elevatorConfig = elevatorConfig;
+        _db = db;
     }
 
-    [HttpGet("hardware")]
-    public IActionResult GetHardwareConfig()
+    [HttpGet]
+    public IActionResult GetConfig()
     {
         return Ok(_simulator.GetConfig());
     }
 
-    [HttpPut("hardware")]
-    public async Task<IActionResult> UpdateHardwareConfig([FromBody] Bkt12HardwareConfig config)
+    [HttpPut]
+    public async Task<IActionResult> UpdateConfig([FromBody] ThermometryConfig config)
     {
         await _simulator.SaveConfigAsync(config);
-        return Ok(new { status = "saved" });
-    }
-
-    [HttpGet("elevator")]
-    public async Task<IActionResult> GetElevatorConfig()
-    {
-        var config = await _elevatorConfig.LoadFromDbAsync();
-        return Ok(config);
-    }
-
-    [HttpPut("elevator")]
-    public async Task<IActionResult> UpdateElevatorConfig([FromBody] ElevatorConfig config)
-    {
-        await _elevatorConfig.SaveAsync(config);
-        await _elevatorConfig.SyncToDbAsync(config);
+        await _elevatorConfig.SyncToDbAsync(config, _db);
         return Ok(new { status = "saved" });
     }
 }

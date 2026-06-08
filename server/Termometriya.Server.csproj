@@ -19,8 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="bkt12-config.jsonc" CopyToOutputDirectory="PreserveNewest" />
-    <Content Include="elevator-config.jsonc" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="termometriya-config.jsonc" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

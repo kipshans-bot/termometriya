@@ -52,8 +52,9 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     await db.Database.EnsureCreatedAsync();
     var cfgService = scope.ServiceProvider.GetRequiredService<ElevatorConfigService>();
-    await cfgService.InitFromFileIfNeededAsync();
-    await SeedData.Initialize(db);
+    var configLoaded = await cfgService.InitFromFileIfNeededAsync(db);
+    if (!configLoaded)
+        await SeedData.Initialize(db);
 }
 
 app.UseCors();

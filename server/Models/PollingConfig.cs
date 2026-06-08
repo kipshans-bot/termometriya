@@ -9,8 +9,8 @@ public enum PollingMode
 public class PollingConfig
 {
     public int Id { get; set; }
-    public int NormalIntervalSec { get; set; } = 3600;
-    public int ElevatedIntervalSec { get; set; } = 900;
+    public int NormalIntervalSec { get; set; } = 10;
+    public int ElevatedIntervalSec { get; set; } = 5;
     public PollingMode CurrentMode { get; set; } = PollingMode.Normal;
     public int GetCurrentInterval() =>
         CurrentMode == PollingMode.Elevated ? ElevatedIntervalSec : NormalIntervalSec;
