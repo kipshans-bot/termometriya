@@ -148,3 +148,21 @@ export interface PollingConfig {
   elevatedIntervalSec: number
   currentMode: number
 }
+
+export interface SiloDeltaData {
+  siloId: number
+  hours: number
+  pendants: Array<{
+    id: number
+    positionIndex: number
+    pointCount: number
+    displayOrder: number
+    isCentral: boolean
+    points: Array<{
+      pointIndex: number
+      delta: number | null
+      avgTemp: number | null
+      latestTemp: number | null
+    }>
+  }>
+}

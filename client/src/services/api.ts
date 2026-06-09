@@ -1,4 +1,4 @@
-import type { ElevatorLine, SiloDetail, SiloSummary, CultureInfo, AlertInfo, HistoryPoint, PollingConfig } from '../models/types'
+import type { ElevatorLine, SiloDetail, SiloSummary, CultureInfo, AlertInfo, HistoryPoint, PollingConfig, SiloDeltaData } from '../models/types'
 
 const BASE = '/api'
 
@@ -108,4 +108,7 @@ export const api = {
   getElevatorConfig: () => get<unknown>('/config/elevator'),
   updateElevatorConfig: (data: unknown) =>
     put('/config/elevator', data),
+
+  getSiloDelta: (id: number, hours = 24) =>
+    get<SiloDeltaData>(`/silo/${id}/delta?hours=${hours}`),
 }

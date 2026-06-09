@@ -110,6 +110,15 @@ tr:hover { background: #14182a; }
   <button class="btn btn-outline" onclick="loadStatus()">Обновить статус</button>
 </div>
 
+<div class="card" style="margin-bottom:12px">
+  <div class="flex flex-wrap gap-8" style="align-items:end">
+    <div><div class="label">Период перепада (часы)</div>
+      <input type="number" id="deltaHours" value="24" min="1" max="720" class="small" onchange="setDeltaHours(+this.value)">
+    </div>
+    <div style="color:#6a6e88;font-size:12px">Используется на вкладке «Уровень» мнемосхемы</div>
+  </div>
+</div>
+
 <div class="tabs">
   <div class="tab active" data-tab="tabCultures" onclick="switchTab('tabCultures')">Культуры</div>
   <div class="tab" data-tab="tabLines" onclick="switchTab('tabLines')">Линии</div>
@@ -212,6 +221,7 @@ async function loadConfig() {
     document.getElementById('configEditor').value = r.content;
     document.getElementById('configPath').textContent = r.path;
     configData = parseJsonc(r.content);
+    document.getElementById('deltaHours').value = configData.deltaHours ?? 24;
     renderCultures();
     renderLines();
     msg('Конфиг загружен', 'ok');
@@ -230,8 +240,13 @@ function toJsonc(obj) {
   return JSON.stringify(obj, null, 2);
 }
 
+function setDeltaHours(val) {
+  if (configData) { configData.deltaHours = val; }
+}
+
 function syncVisualToRaw() {
   if (!configData) return;
+  configData.deltaHours = parseInt(document.getElementById('deltaHours').value) || 24;
   document.getElementById('configEditor').value = toJsonc(configData);
 }
 
@@ -239,7 +254,12 @@ function syncRawToVisual() {
   const raw = document.getElementById('configEditor').value;
   if (!raw.trim()) return;
   const parsed = parseJsonc(raw);
-  if (parsed) { configData = parsed; renderCultures(); renderLines(); }
+  if (parsed) {
+    configData = parsed;
+    document.getElementById('deltaHours').value = configData.deltaHours ?? 24;
+    renderCultures();
+    renderLines();
+  }
 }
 
 // === Cultures ===

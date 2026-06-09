@@ -4,10 +4,8 @@ using Termometriya.Server.Hubs;
 using Termometriya.Server.Services;
 using Termometriya.Server.Services.DqtService;
 
-var baseDir = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location)
-    ?? Environment.CurrentDirectory
-    ?? AppContext.BaseDirectory;
-Console.Error.WriteLine($"DEBUG baseDir={baseDir} cwd={Environment.CurrentDirectory} asmLoc={System.Reflection.Assembly.GetExecutingAssembly().Location}");
+var baseDir = AppContext.BaseDirectory;
+Console.Error.WriteLine($"DEBUG baseDir={baseDir} cwd={Environment.CurrentDirectory}");
 
 var builder = WebApplication.CreateBuilder(new WebApplicationOptions
 {

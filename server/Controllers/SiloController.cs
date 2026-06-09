@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Termometriya.Server.Data;
 using Termometriya.Server.Models;
+using Termometriya.Server.Services;
 
 namespace Termometriya.Server.Controllers;
 
@@ -18,8 +19,13 @@ public class SiloPointData
 public class SiloController : ControllerBase
 {
     private readonly AppDbContext _db;
+    private readonly ElevatorConfigService _config;
 
-    public SiloController(AppDbContext db) => _db = db;
+    public SiloController(AppDbContext db, ElevatorConfigService config)
+    {
+        _db = db;
+        _config = config;
+    }
 
     [HttpGet]
     public async Task<IActionResult> GetAll()
@@ -212,6 +218,67 @@ public class SiloController : ControllerBase
             .ToListAsync();
 
         return Ok(readings);
+    }
+
+    [HttpGet("{id}/delta")]
+    public async Task<IActionResult> GetDelta(int id, [FromQuery] int? hours)
+    {
+        var cfg = await _config.LoadAsync();
+        var actualHours = hours ?? cfg.DeltaHours;
+
+        var silo = await _db.Silos
+            .Include(s => s.Thermopendants.Where(t => t.IsActive))
+            .FirstOrDefaultAsync(s => s.Id == id);
+        if (silo == null) return NotFound();
+
+        var threshold = DateTime.UtcNow.AddHours(-actualHours);
+
+        var latest = await _db.SensorReadings
+            .Where(r => r.SiloId == id && r.IsValid)
+            .GroupBy(r => new { r.ThermopendantId, r.PointIndex })
+            .Select(g => g.OrderByDescending(r => r.Timestamp).First())
+            .ToDictionaryAsync(r => (r.ThermopendantId, r.PointIndex));
+
+        var averages = await _db.SensorReadings
+            .Where(r => r.SiloId == id && r.IsValid && r.Timestamp >= threshold)
+            .GroupBy(r => new { r.ThermopendantId, r.PointIndex })
+            .Select(g => new
+            {
+                g.Key.ThermopendantId,
+                g.Key.PointIndex,
+                AvgTemp = g.Average(r => r.Temperature)
+            })
+            .ToListAsync();
+
+        var avgLookup = averages.ToDictionary(a => (a.ThermopendantId, a.PointIndex), a => a.AvgTemp);
+
+        var result = silo.Thermopendants.Where(t => t.IsActive).OrderBy(t => t.DisplayOrder).Select(t =>
+        {
+            var points = Enumerable.Range(0, t.PointCount).Select(idx =>
+            {
+                var key = (t.Id, idx);
+                double? delta = null;
+                double? avg = null;
+                if (latest.TryGetValue(key, out var l) && l.IsValid)
+                {
+                    avg = avgLookup.GetValueOrDefault(key);
+                    if (avg.HasValue)
+                        delta = Math.Round(l.Temperature - avg.Value, 2);
+                }
+                return new { PointIndex = idx, Delta = delta, AvgTemp = avg, LatestTemp = latest.GetValueOrDefault(key)?.Temperature };
+            }).ToList();
+            return new
+            {
+                t.Id,
+                t.PositionIndex,
+                t.PointCount,
+                t.DisplayOrder,
+                t.IsCentral,
+                Points = points
+            };
+        }).ToList();
+
+        return Ok(new { SiloId = id, Hours = actualHours, Pendants = result });
     }
 }
 

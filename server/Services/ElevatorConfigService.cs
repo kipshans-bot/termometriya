@@ -17,18 +17,15 @@ public class ElevatorConfigService
     {
         _scopeFactory = scopeFactory;
         _logger = logger;
-        var bd = AppContext.BaseDirectory;
-        var cwd = Directory.GetCurrentDirectory();
-        var asmDir = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) ?? ".";
-        _logger.LogInformation("Elevator config search: BaseDir={BaseDir}, CWD={Cwd}, AsmDir={AsmDir}", bd, cwd, asmDir);
+            var bd = AppContext.BaseDirectory;
+            var cwd = Directory.GetCurrentDirectory();
+            _logger.LogInformation("Elevator config search: BaseDir={BaseDir}, CWD={Cwd}", bd, cwd);
 
         _configPath = Path.Combine(bd, "..", "..", "..", "termometriya-config.jsonc");
         if (!File.Exists(_configPath))
             _configPath = Path.Combine(cwd, "termometriya-config.jsonc");
         if (!File.Exists(_configPath))
             _configPath = Path.Combine(bd, "termometriya-config.jsonc");
-        if (!File.Exists(_configPath))
-            _configPath = Path.Combine(asmDir, "termometriya-config.jsonc");
         if (!File.Exists(_configPath))
             _configPath = "";
 

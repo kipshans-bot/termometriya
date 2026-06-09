@@ -11,6 +11,7 @@ public class ThermometryConfig
 {
     public List<CultureConfig> Cultures { get; set; } = [];
     public List<LineConfig> Lines { get; set; } = [];
+    public int DeltaHours { get; set; } = 24;
 }
 
 public class CultureConfig
