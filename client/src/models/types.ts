@@ -161,8 +161,8 @@ export interface SiloDeltaData {
     points: Array<{
       pointIndex: number
       delta: number | null
-      avgTemp: number | null
-      latestTemp: number | null
+      minTemp: number | null
+      maxTemp: number | null
     }>
   }>
 }

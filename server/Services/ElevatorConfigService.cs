@@ -242,6 +242,12 @@ public class ElevatorConfigService
             return false;
         }
 
+        if (await db.Silos.AnyAsync())
+        {
+            _logger.LogInformation("DB already has data, skipping config sync on restart");
+            return true;
+        }
+
         _logger.LogInformation("Loading config from termometriya-config.jsonc...");
         var config = await LoadAsync();
         await SyncToDbAsync(config, db);

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../services/api'
 import { onSiloUpdate } from '../services/signalr'
@@ -26,13 +26,12 @@ function alertColor(level: number): string {
 
 function deltaColor(delta: number | null): string {
   if (delta == null) return '#1a1e32'
-  const abs = Math.abs(delta)
-  return abs > 2 ? '#e84545' : '#33cc33'
+  return delta > 2 ? '#e84545' : '#33cc33'
 }
 
 function deltaLabel(delta: number | null): string {
   if (delta == null) return '—'
-  return (delta > 0 ? '+' : '') + delta.toFixed(1) + '°'
+  return delta.toFixed(1) + '°'
 }
 
 export default function Mnemoscheme() {
@@ -43,6 +42,8 @@ export default function Mnemoscheme() {
   const [siloDeltas, setSiloDeltas] = useState<Record<number, SiloDeltaData>>({})
   const [activeLine, setActiveLine] = useState(1)
   const [tab, setTab] = useState<Tab>('silos')
+
+  const deltaStats = useRef<Record<string, { min: number; max: number }>>({})
 
   useEffect(() => {
     api.getLines().then(setLines).catch(() => {})
@@ -67,12 +68,21 @@ export default function Mnemoscheme() {
     const line = lines.find(l => l.displayOrder === activeLine)
     if (!line) return
     const lineSilos = silos.filter(s => s.lineId === line.id)
+    const next: Record<number, SiloDeltaData> = {}
     for (const s of lineSilos) {
       try {
         const d = await api.getSiloDelta(s.id)
-        setSiloDeltas(prev => ({ ...prev, [s.id]: d }))
+        next[s.id] = d
+        for (const p of d.pendants) {
+          for (const pt of p.points) {
+            if (pt.minTemp != null && pt.maxTemp != null) {
+              deltaStats.current[`${p.id}_${pt.pointIndex}`] = { min: pt.minTemp, max: pt.maxTemp }
+            }
+          }
+        }
       } catch { }
     }
+    setSiloDeltas(prev => ({ ...prev, ...next }))
   }, [lines, activeLine, silos])
 
   useEffect(() => {
@@ -105,11 +115,13 @@ export default function Mnemoscheme() {
         }>
       }>
       if (!Array.isArray(updates)) return
+
       setSilos(prev => prev.map(s => {
         const u = updates.find(x => x.siloId === s.id)
         if (!u) return s
         return { ...s, maxTemp: u.maxTemp, avgTemp: u.avgTemp, hasActiveAlert: u.hasActiveAlert, alertLevel: u.alertLevel }
       }))
+
       setSiloDetails(prev => {
         const next = { ...prev }
         for (const u of updates) {
@@ -138,8 +150,54 @@ export default function Mnemoscheme() {
         }
         return next
       })
+
+      let statsChanged = false
+      for (const u of updates) {
+        for (const pu of u.pendants) {
+          for (const up of pu.points) {
+            if (!up.isValid) continue
+            const key = `${pu.pendantId}_${up.pointIndex}`
+            const existing = deltaStats.current[key]
+            if (existing) {
+              if (up.temp < existing.min) { existing.min = up.temp; statsChanged = true }
+              if (up.temp > existing.max) { existing.max = up.temp; statsChanged = true }
+            } else {
+              deltaStats.current[key] = { min: up.temp, max: up.temp }
+              statsChanged = true
+            }
+          }
+        }
+      }
+
+      if (statsChanged && tab === 'delta') {
+        setSiloDeltas(prev => {
+          const next = { ...prev }
+          for (const u of updates) {
+            const existing = next[u.siloId]
+            if (!existing) continue
+            next[u.siloId] = {
+              ...existing,
+              pendants: existing.pendants.map(p => {
+                const pu = u.pendants.find(x => x.pendantId === p.id)
+                if (!pu) return p
+                return {
+                  ...p,
+                  points: p.points.map(pt => {
+                    const key = `${p.id}_${pt.pointIndex}`
+                    const stats = deltaStats.current[key]
+                    if (!stats) return pt
+                    const delta = Math.round((stats.max - stats.min) * 10) / 10
+                    return { ...pt, delta, minTemp: stats.min, maxTemp: stats.max }
+                  })
+                }
+              })
+            }
+          }
+          return next
+        })
+      }
     })
-  }, [])
+  }, [tab])
 
   const currentLine = lines.find(l => l.displayOrder === activeLine)
   const currentLineSilos = silos.filter(s => s.lineId === currentLine?.id).sort((a, b) => a.number - b.number)
@@ -270,7 +328,6 @@ export default function Mnemoscheme() {
         <div className="line-silos-large">
           {currentLineSilos.map(silo => {
             const deltaData = siloDeltas[silo.id]
-            const detail = siloDetails[silo.id]
             return (
               <div key={silo.id} className="silo-large-card" style={{
                 borderLeft: silo.hasActiveAlert ? `4px solid ${alertColor(silo.alertLevel)}` : '2px solid #1e2238'
@@ -283,7 +340,7 @@ export default function Mnemoscheme() {
                   )}
                 </div>
                 <div style={{ padding: '4px 0', fontSize: 11, color: '#6a6e88' }}>
-                  Перепад температур за {deltaData?.hours ?? 24}ч · <span style={{ color: '#33cc33' }}>зелёный</span> &lt;2°C · <span style={{ color: '#e84545' }}>красный</span> &ge;2°C
+                  Перепад макс-мин за {deltaData?.hours ?? 24}ч · <span style={{ color: '#33cc33' }}>зелёный</span> &le;2°C · <span style={{ color: '#e84545' }}>красный</span> &gt;2°C
                 </div>
                 <div className="silo-large-body" onClick={e => e.stopPropagation()}>
                   {deltaData && deltaData.pendants.length > 0 ? (
@@ -299,13 +356,12 @@ export default function Mnemoscheme() {
                                 {Array.from({ length: pendant.pointCount }, (_, i) => {
                                   const pt = pendant.points.find(p => p.pointIndex === i)
                                   const d = pt?.delta ?? null
-                                  const color = deltaColor(d)
                                   return (
                                     <div
                                       key={i}
                                       className="temp-segment"
-                                      style={{ height: segHeight, background: color }}
-                                      title={`Точка ${i}: ${deltaLabel(d)}${pt?.latestTemp != null ? ` (сейчас ${pt.latestTemp.toFixed(1)}°, среднее ${pt.avgTemp?.toFixed(1)}°)` : ''}`}
+                                      style={{ height: segHeight, background: deltaColor(d) }}
+                                      title={`Точка ${i}: ${deltaLabel(d)}${pt?.minTemp != null && pt?.maxTemp != null ? ` (мин ${pt.minTemp.toFixed(1)}°, макс ${pt.maxTemp.toFixed(1)}°)` : ' нет данных'}`}
                                     />
                                   )
                                 })}
@@ -318,12 +374,12 @@ export default function Mnemoscheme() {
                   ) : !deltaData ? (
                     <div style={{ padding: 20, textAlign: 'center', color: '#6a6e88' }}>Загрузка...</div>
                   ) : (
-                    <div style={{ padding: 20, textAlign: 'center', color: '#6a6e88' }}>Нет данных за 24ч</div>
+                    <div style={{ padding: 20, textAlign: 'center', color: '#6a6e88' }}>Нет данных за {deltaData.hours}ч</div>
                   )}
                 </div>
                 <div className="silo-large-footer">
-                  {detail ? `Средняя: ${detail.pendants.flatMap(p => p.points).filter(p => p.isValid && p.temp != null).reduce((s, p) => s + p.temp!, 0) / Math.max(1, detail.pendants.flatMap(p => p.points).filter(p => p.isValid && p.temp != null).length)}°C` : ''}
-                  {deltaData && ` · Перепад за ${deltaData.hours}ч`}
+                  {silo.fillLevel > 0 ? `Загрузка: ${silo.fillLevel.toFixed(0)}%` : ''}
+                  {deltaData ? ` · Перепад за ${deltaData.hours}ч` : ''}
                 </div>
               </div>
             )

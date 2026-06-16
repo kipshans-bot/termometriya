@@ -233,39 +233,33 @@ public class SiloController : ControllerBase
 
         var threshold = DateTime.UtcNow.AddHours(-actualHours);
 
-        var latest = await _db.SensorReadings
-            .Where(r => r.SiloId == id && r.IsValid)
-            .GroupBy(r => new { r.ThermopendantId, r.PointIndex })
-            .Select(g => g.OrderByDescending(r => r.Timestamp).First())
-            .ToDictionaryAsync(r => (r.ThermopendantId, r.PointIndex));
-
-        var averages = await _db.SensorReadings
+        var stats = await _db.SensorReadings
             .Where(r => r.SiloId == id && r.IsValid && r.Timestamp >= threshold)
             .GroupBy(r => new { r.ThermopendantId, r.PointIndex })
             .Select(g => new
             {
                 g.Key.ThermopendantId,
                 g.Key.PointIndex,
-                AvgTemp = g.Average(r => r.Temperature)
+                MinTemp = g.Min(r => r.Temperature),
+                MaxTemp = g.Max(r => r.Temperature)
             })
             .ToListAsync();
 
-        var avgLookup = averages.ToDictionary(a => (a.ThermopendantId, a.PointIndex), a => a.AvgTemp);
+        var statsLookup = stats.ToDictionary(s => (s.ThermopendantId, s.PointIndex));
 
         var result = silo.Thermopendants.Where(t => t.IsActive).OrderBy(t => t.DisplayOrder).Select(t =>
         {
             var points = Enumerable.Range(0, t.PointCount).Select(idx =>
             {
                 var key = (t.Id, idx);
-                double? delta = null;
-                double? avg = null;
-                if (latest.TryGetValue(key, out var l) && l.IsValid)
+                double? minTemp = null, maxTemp = null, delta = null;
+                if (statsLookup.TryGetValue(key, out var s))
                 {
-                    avg = avgLookup.GetValueOrDefault(key);
-                    if (avg.HasValue)
-                        delta = Math.Round(l.Temperature - avg.Value, 2);
+                    minTemp = Math.Round(s.MinTemp, 1);
+                    maxTemp = Math.Round(s.MaxTemp, 1);
+                    delta = Math.Round(s.MaxTemp - s.MinTemp, 1);
                 }
-                return new { PointIndex = idx, Delta = delta, AvgTemp = avg, LatestTemp = latest.GetValueOrDefault(key)?.Temperature };
+                return new { PointIndex = idx, Delta = delta, MinTemp = minTemp, MaxTemp = maxTemp };
             }).ToList();
             return new
             {
