@@ -1,18 +1,25 @@
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts'
 import { api } from '../services/api'
 import type { SiloDetail, HistoryPoint } from '../models/types'
 
-type TimeRange = '1h' | '6h' | '24h' | '7d'
+type QuickRange = '1h' | '6h' | '24h' | '7d'
 
-function timeRangeToMs(range: TimeRange): number {
+function quickToMs(range: QuickRange): number {
   switch (range) {
     case '1h': return 3600000
     case '6h': return 21600000
     case '24h': return 86400000
     case '7d': return 604800000
   }
+}
+
+function toLocalDateInput(d: Date): string {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
 }
 
 export default function Trends() {
@@ -27,9 +34,12 @@ export default function Trends() {
   const [selectedPoint, setSelectedPoint] = useState<number | null>(
     searchParams.get('point') ? Number(searchParams.get('point')) : null
   )
-  const [timeRange, setTimeRange] = useState<TimeRange>('24h')
+  const [quickRange, setQuickRange] = useState<QuickRange>('24h')
+  const [customFrom, setCustomFrom] = useState('')
+  const [customTo, setCustomTo] = useState('')
   const [readings, setReadings] = useState<HistoryPoint[]>([])
   const [loading, setLoading] = useState(false)
+  const [useCustom, setUseCustom] = useState(false)
 
   useEffect(() => {
     api.getSilos().then(async (summaries) => {
@@ -40,15 +50,40 @@ export default function Trends() {
     }).catch(() => {})
   }, [])
 
-  useEffect(() => {
-    const now = Date.now()
-    const from = new Date(now - timeRangeToMs(timeRange))
+  const fetchData = useCallback(async (from: Date, to: Date) => {
     setLoading(true)
-    api.getSiloReadings(selectedSilo, from.toISOString(), new Date(now).toISOString())
-      .then(setReadings)
-      .catch(() => {})
-      .finally(() => setLoading(false))
-  }, [selectedSilo, timeRange])
+    try {
+      const data = await api.getSiloReadings(selectedSilo, from.toISOString(), to.toISOString())
+      setReadings(data)
+    } catch { setReadings([]) }
+    finally { setLoading(false) }
+  }, [selectedSilo])
+
+  useEffect(() => {
+    const now = new Date()
+    if (useCustom && customFrom && customTo) {
+      fetchData(new Date(customFrom), new Date(customTo + 'T23:59:59'))
+    } else {
+      const from = new Date(now.getTime() - quickToMs(quickRange))
+      fetchData(from, now)
+    }
+  }, [selectedSilo, quickRange, useCustom, customFrom, customTo, fetchData])
+
+  function selectQuick(r: QuickRange) {
+    setUseCustom(false)
+    setQuickRange(r)
+  }
+
+  function selectCustom() {
+    if (!customFrom) {
+      const d = new Date(Date.now() - 7 * 86400000)
+      setCustomFrom(toLocalDateInput(d))
+    }
+    if (!customTo) {
+      setCustomTo(toLocalDateInput(new Date()))
+    }
+    setUseCustom(true)
+  }
 
   const silo = silos.find(s => s.id === selectedSilo)
 
@@ -74,7 +109,11 @@ export default function Trends() {
       r => r.thermopendantId === selectedPendant && r.pointIndex === selectedPoint && r.isValid
     )
 
-    const bucketMs = timeRange === '7d' ? 3600000 : 60000
+    const rangeMs = useCustom && customFrom && customTo
+      ? new Date(customTo + 'T23:59:59').getTime() - new Date(customFrom).getTime()
+      : quickToMs(quickRange)
+    const bucketMs = rangeMs > 86400000 * 2 ? 3600000 : 60000
+
     const buckets = new Map<number, { sum: number; count: number; time: number }>()
 
     for (const r of filtered) {
@@ -87,7 +126,7 @@ export default function Trends() {
     return Array.from(buckets.values())
       .map(b => ({ time: b.time, temp: Math.round(b.sum / b.count * 10) / 10 }))
       .sort((a, b) => a.time - b.time)
-  }, [readings, selectedPendant, selectedPoint, timeRange])
+  }, [readings, selectedPendant, selectedPoint, quickRange, useCustom, customFrom, customTo])
 
   if (!silos.length) {
     return <div className="card" style={{ textAlign: 'center', padding: 40, color: '#6a6e88' }}>Загрузка...</div>
@@ -101,13 +140,33 @@ export default function Trends() {
       </div>
 
       <div className="time-selector">
-        {(['1h', '6h', '24h', '7d'] as TimeRange[]).map(t => (
-          <button key={t} className={`time-btn ${timeRange === t ? 'active' : ''}`}
-            onClick={() => setTimeRange(t)}>
+        {(['1h', '6h', '24h', '7d'] as QuickRange[]).map(t => (
+          <button key={t} className={`time-btn ${!useCustom && quickRange === t ? 'active' : ''}`}
+            onClick={() => selectQuick(t)}>
             {t === '1h' ? '1 час' : t === '6h' ? '6 часов' : t === '24h' ? '24 часа' : '7 дней'}
           </button>
         ))}
+        <button className={`time-btn ${useCustom ? 'active' : ''}`}
+          onClick={selectCustom}>
+          Календарь
+        </button>
       </div>
+
+      {useCustom && (
+        <div style={{ display: 'flex', gap: 8, marginBottom: 12, alignItems: 'center' }}>
+          <span style={{ color: '#8a8fa8', fontSize: 13 }}>с</span>
+          <input type="date" className="form-input" style={{ width: 160, colorScheme: 'dark' }}
+            value={customFrom} onChange={e => setCustomFrom(e.target.value)} />
+          <span style={{ color: '#8a8fa8', fontSize: 13 }}>по</span>
+          <input type="date" className="form-input" style={{ width: 160, colorScheme: 'dark' }}
+            value={customTo} onChange={e => setCustomTo(e.target.value)} />
+          {customFrom && customTo && (
+            <span style={{ color: '#6a6e88', fontSize: 12 }}>
+              {Math.round((new Date(customTo + 'T23:59:59').getTime() - new Date(customFrom).getTime()) / 86400000) + 1} дней
+            </span>
+          )}
+        </div>
+      )}
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12, alignItems: 'center' }}>
         <select className="form-input" style={{ width: 160 }}
@@ -140,6 +199,11 @@ export default function Trends() {
         </select>
 
         {loading && <span style={{ color: '#6a6e88', fontSize: 12 }}>загрузка...</span>}
+        {!loading && readings.length > 0 && (
+          <span style={{ color: '#6a6e88', fontSize: 12 }}>
+            {readings.length} записей {useCustom ? `c ${customFrom}` : `за последние ${quickRange}`}
+          </span>
+        )}
       </div>
 
       <div className="chart-container">
@@ -158,7 +222,9 @@ export default function Trends() {
                 stroke="#6a6e88" fontSize={11}
                 tickFormatter={(ts) => new Date(ts).toLocaleString('ru-RU', {
                   hour: '2-digit', minute: '2-digit',
-                  ...(timeRange === '7d' ? { day: '2-digit', month: '2-digit' } : {})
+                  ...(useCustom && customFrom && customTo
+                    ? { day: '2-digit', month: '2-digit' }
+                    : quickRange === '7d' ? { day: '2-digit', month: '2-digit' } : {})
                 })}
               />
               <YAxis stroke="#6a6e88" fontSize={11} domain={['auto', 'auto']} />

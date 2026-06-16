@@ -203,9 +203,20 @@ public class SiloController : ControllerBase
         if (from.HasValue) query = query.Where(r => r.Timestamp >= from.Value);
         if (to.HasValue) query = query.Where(r => r.Timestamp <= to.Value);
 
-        var readings = await query
-            .OrderByDescending(r => r.Timestamp)
-            .Take(5000)
+        IQueryable<SensorReading> limited = query.OrderByDescending(r => r.Timestamp);
+        if (from.HasValue || to.HasValue)
+            return Ok(await limited.Select(r => new
+            {
+                r.ThermopendantId,
+                r.PointIndex,
+                r.Temperature,
+                r.Humidity,
+                r.IsValid,
+                r.Timestamp
+            }).ToListAsync());
+
+        limited = limited.Take(5000);
+        var readings = await limited
             .Select(r => new
             {
                 r.ThermopendantId,
