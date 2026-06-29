@@ -10,7 +10,10 @@ public class DataPollingService : BackgroundService
     private readonly ModbusTcpSimulator _simulator;
     private readonly ILogger<DataPollingService> _logger;
     private DateTime _lastGrainCheck = DateTime.MinValue;
+    private DateTime _lastCleanup = DateTime.MinValue;
     private static readonly TimeSpan GrainCheckInterval = TimeSpan.FromHours(1);
+    private static readonly TimeSpan CleanupInterval = TimeSpan.FromDays(1);
+    private static readonly TimeSpan DataRetention = TimeSpan.FromDays(14);
 
     public DataPollingService(
         IServiceScopeFactory scopeFactory,
@@ -74,6 +77,23 @@ public class DataPollingService : BackgroundService
                     }
                     db.SensorReadings.AddRange(readings);
                     await db.SaveChangesAsync(stoppingToken);
+
+                    var now = DateTime.UtcNow;
+                    if (now - _lastCleanup >= CleanupInterval)
+                    {
+                        _lastCleanup = now;
+                        var cutoff = now - DataRetention;
+                        var oldReadings = await db.SensorReadings.Where(r => r.Timestamp < cutoff).CountAsync(stoppingToken);
+                        if (oldReadings > 0)
+                        {
+                            db.SensorReadings.RemoveRange(db.SensorReadings.Where(r => r.Timestamp < cutoff));
+                            var oldAlerts = await db.AlertEvents.Where(a => !a.IsActive && a.Timestamp < cutoff).CountAsync(stoppingToken);
+                            if (oldAlerts > 0)
+                                db.AlertEvents.RemoveRange(db.AlertEvents.Where(a => !a.IsActive && a.Timestamp < cutoff));
+                            await db.SaveChangesAsync(stoppingToken);
+                            _logger.LogInformation("Cleanup: removed {Readings} old readings, {Alerts} old alerts", oldReadings, oldAlerts);
+                        }
+                    }
                 }
             }
             catch (OperationCanceledException) { break; }
